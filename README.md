@@ -18,7 +18,32 @@ Incluye un mapa listo (**el Pueblo**: calle con casas, plaza con fuente, preside
 | *Recomendado*: tarjeta NVIDIA (RTX) | Que el Analizador de videos sea rápido (sin ella funciona, pero lento) |
 | *Opcional*: Roblox Studio | Exportar tus personajes |
 
-## Instalación
+## Instalación fácil (Claude lo hace por ti)
+1. Instala la app de [Claude](https://claude.com/download), inicia sesión y abre la pestaña **Code**.
+2. Elige como carpeta el **lugar** donde quieres guardar el kit (por ejemplo, Documentos).
+3. Copia este prompt, cambia lo que está entre corchetes y pégalo. Acepta los permisos que te pida.
+
+```text
+Quiero instalar el Kit de Animación Roblox en esta PC.
+
+Datos:
+- Lugar donde lo quiero: [EJEMPLO: C:\Users\TuNombre\Documents]
+- Nombre de la carpeta: [EJEMPLO: YOUTUBE ANIMACION]
+
+Haz esto en orden:
+1. Revisa si tengo Git, Python 3.11 o más nuevo y FFmpeg. Si falta algo, pídeme permiso y lo instalas con winget.
+2. Clona https://github.com/YuyoGods/kit-animacion-roblox.git en el lugar y con el nombre que te di.
+3. Lee el README.md, el CLAUDE.md y la skill .claude/skills/instalar-kit/SKILL.md del kit y sigue sus pasos: instala los paquetes, revisa con "py instalar.py", ayúdame con Blender 5.2 y el addon BlenderMCP. Pídeme permiso antes de cada descarga.
+4. Guarda en tu memoria: "Mi kit de animación Roblox está en [lugar]\[nombre]. Antes de cualquier trabajo de animación lee su CLAUDE.md y MI_CANAL.md. Para actualizarlo uso la skill actualizar-kit (git pull sin forzar nada)."
+5. Ayúdame a llenar MI_CANAL.md: pregúntame el nombre de mi canal, mi personaje principal y mis personajes secundarios. Mi rol en el kit es "usuario".
+6. Al final dime qué quedó listo, qué falta y cómo abrir una sesión nueva dentro de la carpeta del kit (ahí se cargan sus reglas y skills).
+
+Reglas: respóndeme en español y breve, nunca me pidas claves ni contraseñas en el chat y no borres nada sin preguntarme.
+```
+
+4. Al terminar, abre una **sesión nueva eligiendo la carpeta del kit**: así Claude carga sus reglas y skills.
+
+## Instalación a mano
 1. Descarga el kit (en la carpeta donde lo quieras tener):
    ```
    git clone https://github.com/YuyoGods/kit-animacion-roblox.git "YOUTUBE ANIMACION"
@@ -53,6 +78,8 @@ Cada carpeta trae un `LEEME.md` que explica qué va ahí. Las carpetas `docs/` y
 - *"Quiero un Short de 30 s: mi protagonista llega tarde a la escuela…"* → guion → animación → revisión de cámaras → vista previa → voz y subtítulos → render final.
 - *"Analiza los videos nuevos"* (después de subir videos a `Analizador/Videos_para_analizar/<Creador>/`) y luego *"hazlo al estilo de <Creador>"*.
 - *"Del segundo 10 al 15 no me gustó, cámbiale…"* → Claude rehace solo ese tramo.
+
+El kit trae **skills** (`.claude/skills/`) que Claude usa solo cuando abres la carpeta del kit: instalar/revisar, poner rig, analizar videos, nuevo episodio, rehacer un tramo y actualizar el kit.
 
 Claude te enseña fotos de avance antes de renderizar y te pide permiso antes de gastar créditos de ElevenLabs o hacer renders largos.
 

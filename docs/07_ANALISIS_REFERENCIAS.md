@@ -28,7 +28,7 @@ Objetivo: copiar **la fórmula** de los creadores que funcionan (ritmo, planos, 
 | Cámara | alineación ORB+RANSAC entre cuadros: zoom, paneo, giro; temblor = residuo de alta frecuencia (umbral 2,5) | Media-alta; con mucho movimiento del personaje la cámara que lo sigue sale como "acercamiento/alejamiento" |
 | Tipo de plano | Grounding DINO: alto de la cara (≥40 % primerísimo, ≥22 % primer plano, ≥11 % medio) y del cuerpo (≥85 % medio, ≥40 % entero) | Media-alta |
 | Ambiente, hora, lugar | CLIP sin entrenar | Baja-media (orientativo) |
-| Efectos | destellos, negro/blanco, partículas (muchos puntos que se mueven aparte de la cámara), sacudida de impacto, imagen congelada, cambio de color, cámara lenta | **Candidatos**: Claude los confirma mirando `efectos/` |
+| Efectos | destellos, negro/blanco, partículas (muchos puntos que se mueven aparte de la cámara), sacudida de impacto, imagen congelada, cambio de color, cámara lenta | **Candidatos**: Claude los confirma mirando `efectos/`. Las "partículas" dan muchos falsos con dron/paralaje y gigantes caminando (visto en ClusterK/Gelo): no usarlas como regla |
 | Subtítulos | EasyOCR a 6 muestras/s + fotograma a fotograma en los primeros 12 (inicio exacto y pop) | Alta en posición/tamaño/colores; el texto leído puede tener errores (se usa la voz para contar palabras) |
 | Voz | Whisper large-v3-turbo (GPU) con tiempo por palabra; descarta frases inventadas en silencios | Alta |
 | Sonido | LUFS (FFmpeg ebur128), golpes fuera de la voz (librosa), fondo armónico ⇒ música probable | Media |

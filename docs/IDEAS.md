@@ -8,6 +8,8 @@
 - [ ] Rig automático: detectar las 15 piezas R15 del OBJ por posición (hoy `armar_rig_r15_plantilla.py` necesita el mapa `PARTS` a mano).
 - [ ] Separar la parte fija de `armar_video.py` (mezcla, subtítulos, MP4) de la parte de cada episodio (frases, efectos) en un archivo de datos.
 
+- [ ] Detector de partículas confiable (seguimiento de objetos chicos con flujo óptico, ignorando paralaje de dron); hoy da falsos positivos.
+
 ## Ideas
 - Modo noche del pueblo (ventanas y faroles encendidos, cielo oscuro) como interruptor de un script.
 - Biblioteca de poses (JSON) por personaje: saludar, señalar, sorprenderse, sentarse, tocar puerta, agacharse.

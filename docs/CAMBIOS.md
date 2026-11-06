@@ -3,6 +3,12 @@
 > Una entrada por cada actualización que se sube al repositorio (lo más nuevo arriba).
 > Si una actualización renombra o mueve archivos compartidos, avisarlo aquí.
 
+## v0.3.0 — 2026-11-06 — Skills y primer entrenamiento
+- **Skills del kit** (`.claude/skills/`): `instalar-kit`, `poner-rig`, `analizar-videos`, `nuevo-episodio`, `rehacer-tramo`, `actualizar-kit`. Claude las usa solo al abrir la carpeta del kit.
+- **Primer entrenamiento** (`Analizador/Estilos/`): fórmulas y notas de **ClusterK** y **Gelo** (3 videos cada uno, confiabilidad baja: se irán afinando) + `COMPARACION.md`.
+- Analizador: subtítulos de una palabra bien contados; detector de partículas sin la franja de subtítulos ni el paralaje de zooms.
+- README: instalación fácil con un prompt para Claude.
+
 ## v0.2.0 — 2026-11-06 — Carpetas claras, Analizador y rehacer tramos
 - **Carpetas sin números**, más fáciles de entender: `Personajes/` (`Protagonista`, `Secundarios`, `Pueblo_NPC`, `Plantillas_Rigs`), `Caras/`, `Escenarios/`, `Episodios/`, `Analizador/`, `Herramientas/`, `Respaldos/`.
   Si tenías la v0.1.0 con cosas tuyas: mueve los videos de `00_Referencias` → `Analizador/Videos_para_analizar/<Creador>/`, `01_Personajes/1_Protagonista` → `Personajes/Protagonista` (igual secundarios, NPC y rigs), `05_Recursos/Caras` → `Caras`, `02_Escenarios` → `Escenarios`, `03_Episodios` → `Episodios`, `99_Archivo` → `Respaldos` (o pídeselo a Claude).

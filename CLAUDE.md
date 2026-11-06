@@ -35,6 +35,7 @@ Sistema para hacer **animaciones 3D estilo Roblox en Blender con Claude** (media
 ├── CLAUDE.md                  ← este archivo (compartido)
 ├── README.md                  ← instalación y uso para personas
 ├── instalar.py                ← revisa requisitos y crea los archivos personales
+├── .claude/skills/            ← compartido: skills del kit (instalar-kit, poner-rig, analizar-videos, nuevo-episodio, rehacer-tramo, actualizar-kit)
 ├── MI_CANAL.md                ← PERSONAL: canal, reparto, voz, estado y pendientes
 ├── MI_BITACORA.md             ← PERSONAL: historial de sesiones de este usuario
 ├── mi_config.json             ← PERSONAL: rutas de esta PC
@@ -151,6 +152,8 @@ Nombres: episodios `EP001_Titulo_Corto`, cámaras `CR_Cam_S#_Nombre`, marcadores
 - Las lecciones y mejoras generales sí van a `docs/` y `Herramientas/`.
 - **Subir al repositorio solo cuando el usuario lo diga** ("sube la actualización"). Antes: revisar `git status` (que no vaya nada personal, claves ni material con licencia), anotar la versión en `docs/CAMBIOS.md` y pedir confirmación.
 - No renombrar ni mover archivos compartidos sin necesidad (rompe las copias de los demás); si es necesario, avisarlo en `docs/CAMBIOS.md`.
+- **Antes de cada subida, probar como si fuera un amigo** (el repositorio es público): clonar en una carpeta temporal, correr `py instalar.py`, compilar todos los `.py`, correr el analizador vacío y confirmar que `git status` del clon queda limpio. Si algo falla, no se sube.
+- **Subir el entrenamiento** (fórmulas de `Analizador/Estilos/`): solo `<Creador>.json`, `_formula.md`, `_notas.md` y `COMPARACION.md` (nunca `Nosotros*`, videos, resultados ni imágenes). Son archivos nuevos o que solo crecen, así que un `git pull` de los amigos no choca con nada suyo.
 
 ## 9. Estado
 

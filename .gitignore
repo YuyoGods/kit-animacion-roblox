@@ -54,3 +54,7 @@ desktop.ini
 
 # Estilo propio de cada usuario (sus episodios analizados)
 Analizador/Estilos/Nosotros*
+
+# Claude: solo se comparten las skills del kit (la configuracion local de cada quien no)
+.claude/*
+!.claude/skills/

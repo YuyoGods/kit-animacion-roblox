@@ -109,6 +109,8 @@ def analizar_video(ruta, creador, args):
     log("  5/6 historia...")
     hist = historia.analizar(au.get("segmentos", []), au.get("palabras", []), info["duracion"])
 
+    if subs.get("banda_y_pct"):   # recalcular efectos ya sabiendo donde van los subtitulos
+        efectos = vision.detectar_efectos(m, cortes, fps, tomas, subs["banda_y_pct"])
     datos.update({"tomas": tomas, "transiciones": trans, "efectos": efectos, "audio": au, "subtitulos": subs, "historia": hist})
     datos["resumen"] = resumen(datos)
     datos["segundos_de_analisis"] = r(time.time() - t_ini, 1)

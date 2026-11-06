@@ -49,6 +49,7 @@ def medir_fotogramas(proxy, cortes, nf):
     z = lambda: np.zeros(nf)
     m = {k: z() for k in ("dx", "dy", "rot", "brillo", "sat", "lab_a", "lab_b", "nitidez", "vineta", "resid", "blobs", "dif")}
     m["escala"] = np.ones(nf)
+    m["blobs_franja"] = np.zeros((nf, 10))
     m["ok"] = np.zeros(nf, bool)
     yy, xx = np.mgrid[0:SH, 0:SW]
     cx, cy = SW / 2, SH / 2
@@ -99,9 +100,13 @@ def medir_fotogramas(proxy, cortes, nf):
                     w = cv2.warpAffine(prev, A, (SW, SH), borderMode=cv2.BORDER_REPLICATE)
                     mask = ((cv2.absdiff(g, w) > 28) & (borde > 0)).astype(np.uint8)
                     m["resid"][i] = mask.mean()
-                    n, _, st, _ = cv2.connectedComponentsWithStats(mask, connectivity=8)
+                    n, _, st, cen = cv2.connectedComponentsWithStats(mask, connectivity=8)
                     ar = st[1:, cv2.CC_STAT_AREA]
-                    m["blobs"][i] = int(((ar >= 2) & (ar <= 60)).sum())
+                    chicos = (ar >= 2) & (ar <= 60)
+                    m["blobs"][i] = int(chicos.sum())
+                    if chicos.any():
+                        fr_ = np.clip((cen[1:, 1][chicos] / SH * 10).astype(int), 0, 9)
+                        m["blobs_franja"][i] = np.bincount(fr_, minlength=10)
         prev, prev_k, prev_d = g, k, d
     cap.release()
     if n_ok < nf:
@@ -268,15 +273,24 @@ def _eventos(mask, fps, min_frames, tipo, extra=None):
     return ev
 
 
-def detectar_efectos(m, cortes, fps, tomas):
+def detectar_efectos(m, cortes, fps, tomas, banda_subs=None):
     br, nf = m["brillo"], len(m["brillo"])
     base = suav(br, 11)
     ev = []
     ev += _eventos((br - base > 40) & (br > 120), fps, 1, "destello")
     ev += _eventos(br < 12, fps, 3, "pantalla negra")
     ev += _eventos(br > 238, fps, 2, "pantalla blanca")
-    # particulas: muchos puntos chicos moviendose aparte de la camara
-    bl = m["blobs"]
+    # particulas: muchos puntos chicos moviendose aparte de la camara, SIN la franja de subtitulos
+    # (las letras que cambian parecen particulas) ni zooms/paneos rapidos (paralaje). Calibrado con ClusterK.
+    bf_ = m.get("blobs_franja")
+    if bf_ is not None and banda_subs:
+        y0, y1 = int(banda_subs[0] / 10), int(np.ceil(banda_subs[1] / 10))
+        quitar = list(range(max(0, y0 - 1), min(10, y1 + 1)))
+        bl = bf_.sum(1) - bf_[:, quitar].sum(1)
+    else:
+        bl = m["blobs"].copy()
+    rapido = (np.abs(np.log(np.clip(m["escala"], 1e-3, None))) > 0.012) | (np.hypot(m["dx"], m["dy"]) > 0.03)
+    bl = np.where(rapido, 0, bl)
     umbral_b = max(18.0, 4.0 * float(np.median(bl)))
     ev += _eventos(suav(bl, 5) > umbral_b, fps, int(fps * 0.4), "posibles partículas (hojas/lluvia/chispas/polvo)",
                    lambda i, j: {"puntos_medios": r(np.mean(bl[i:j]), 1)})

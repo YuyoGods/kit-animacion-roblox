@@ -43,6 +43,12 @@ def construir(creador):
     tomas = [t for d in vids for t in d["tomas"]]
     durs = [t["duracion"] for t in tomas]
     mins = sum(d["video"]["duracion"] for d in vids) / 60
+    from subtitulos import palabras_evento, modo_subtitulos
+    for d in vids:   # recalcula con la regla actual (sirve para videos analizados con una version anterior)
+        es, ev = d["subtitulos"].get("estilo"), d["subtitulos"].get("eventos") or []
+        if es and ev:
+            es["palabras_por_subtitulo"] = r(np.median([palabras_evento(e) for e in ev]), 1)
+            es["modo"] = modo_subtitulos(es["palabras_por_subtitulo"])
     subs = [d["subtitulos"].get("estilo") or {} for d in vids if d["subtitulos"].get("hay_subtitulos")]
     voz = [d["audio"].get("voz", {}) for d in vids if d["audio"].get("voz", {}).get("hay_voz")]
     son = [d["audio"].get("sonidos", {}) for d in vids]
@@ -71,7 +77,7 @@ def construir(creador):
                    "golpes_zoom_por_minuto": _med([d["resumen"]["golpes_zoom_por_minuto"] for d in vids]),
                    "movimiento_en_cuadro_pct": _med([t["movimiento_en_cuadro_pct"] for t in tomas])},
         "transiciones_pct": _mezcla(x["tipo"] for d in vids for x in d["transiciones"]),
-        "efectos_por_minuto": {k: r(v / max(1e-6, mins), 2) for k, v in ef_tipo.most_common()},
+        "efectos_candidatos_por_minuto": {k: r(v / max(1e-6, mins), 2) for k, v in ef_tipo.most_common()},   # sin confirmar: los reales van en _notas.md
         "ambiente_pct": _mezcla(t.get("ambiente") for t in tomas), "hora_pct": _mezcla(t.get("hora") for t in tomas),
         "lugar_pct": _mezcla(t.get("lugar") for t in tomas), "personajes_pct": _mezcla({0: "ninguno", 1: "uno", 2: "dos"}.get(t.get("personajes_n"), "tres o más") if t.get("personajes_n") is not None else None for t in tomas),
         "subtitulos": {"videos_con_subtitulos_pct": round(100 * len(subs) / n), "modo": _top(s.get("modo") for s in subs),
@@ -149,10 +155,10 @@ def escribir_md(creador, F, vids):
          "", "## Receta (para nuestras animaciones)", ""] + ["- " + x for x in F["reglas"]]
     for titulo, clave in [("Ritmo", "ritmo"), ("Cámara", "camara"), ("Subtítulos", "subtitulos"), ("Voz", "voz"), ("Audio", "audio"), ("Historia", "historia")]:
         L += ["", "## " + titulo, "", "| Dato | Valor |", "|---|---|"] + ["| %s | %s |" % (k.replace("_", " "), v) for k, v in F[clave].items()]
-    for titulo, clave in [("Planos", "planos_pct"), ("Movimientos de cámara", "camara_pct"), ("Transiciones", "transiciones_pct"), ("Efectos por minuto", "efectos_por_minuto"),
+    for titulo, clave in [("Planos", "planos_pct"), ("Movimientos de cámara", "camara_pct"), ("Transiciones", "transiciones_pct"), ("Efectos CANDIDATOS por minuto (sin confirmar; los reales están en las notas)", "efectos_candidatos_por_minuto"),
                           ("Ambiente", "ambiente_pct"), ("Hora", "hora_pct"), ("Personajes en cuadro", "personajes_pct")]:
         if F[clave]:
-            L += ["", "**%s:** " % titulo + ", ".join("%s %s%s" % (k, v, "" if clave == "efectos_por_minuto" else "%") for k, v in F[clave].items())]
+            L += ["", "**%s:** " % titulo + ", ".join("%s %s%s" % (k, v, "" if clave == "efectos_candidatos_por_minuto" else "%") for k, v in F[clave].items())]
     L += ["", "## Videos analizados", ""]
     for d in vids:
         rel = os.path.relpath(os.path.join(d["_carpeta"], "reporte.html"), ESTILOS).replace("\\", "/")
@@ -180,6 +186,15 @@ def comparar():
              ("LUFS", lambda F: F["audio"]["lufs"]), ("Golpes de sonido/min", lambda F: F["audio"]["golpes_sonido_por_minuto"]),
              ("Música probable %", lambda F: F["audio"]["musica_probable_pct"]), ("Giros por minuto", lambda F: F["historia"]["giros_por_minuto"]),
              ("Termina en pregunta %", lambda F: F["historia"]["termina_en_pregunta_pct"]), ("Confiabilidad", lambda F: F["confiabilidad"])]
+    # COMPARACION.md (se comparte) solo con creadores; Nosotros_comparacion.md (personal) agrega nuestro estilo
+    creadores = [F for F in Fs if F["creador"] != "Nosotros"]
+    if creadores:
+        _tabla("COMPARACION.md", creadores, filas)
+    if len(creadores) < len(Fs):
+        _tabla("Nosotros_comparacion.md", Fs, filas)
+
+
+def _tabla(nombre_md, Fs, filas):
     L = ["# Comparación de estilos", "", "| | " + " | ".join(F["creador"] for F in Fs) + " |", "|---|" + "---|" * len(Fs)]
     for nombre, fn in filas:
         vals = []
@@ -190,5 +205,5 @@ def comparar():
             except Exception:
                 vals.append("—")
         L.append("| %s | %s |" % (nombre, " | ".join(vals)))
-    L += ["", "> `Nosotros` = nuestros propios episodios (para medir qué tanto nos parecemos a cada creador)."]
-    open(os.path.join(ESTILOS, "COMPARACION.md"), "w", encoding="utf-8").write("\n".join(L) + "\n")
+    L += ["", "> Medido automáticamente. Las reglas de historia, efectos y estilo que revisa Claude están en `<Creador>_notas.md`."]
+    open(os.path.join(ESTILOS, nombre_md), "w", encoding="utf-8").write("\n".join(L) + "\n")

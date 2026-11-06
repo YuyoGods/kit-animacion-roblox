@@ -100,6 +100,21 @@ def _bloques(res, W, H):
     return bloques
 
 
+def palabras_evento(e):
+    """palabras que muestra un subtitulo. Si el OCR leyo UNA palabra corta, es 1 (la voz cuenta de mas porque
+    el subtitulo dura un poco mas en el muestreo). Calibrado con ClusterK (una palabra a la vez)."""
+    t = _norm(e.get("texto", ""))
+    if e.get("palabras_ocr") == 1 and 0 < len(t) <= 11:
+        return 1
+    voz = min(e.get("palabras_voz") or 0, 8)
+    return max(e.get("palabras_ocr") or 0, voz) or 1
+
+
+def modo_subtitulos(med):
+    return ("palabra por palabra" if med <= 1.3 else "grupos de 2-3 palabras" if med <= 3.5
+            else "frases cortas (4-7 palabras)" if med <= 7 else "frases completas")
+
+
 def _iguales(a, b):
     na, nb = _norm(a), _norm(b)
     return bool(na) and (na == nb or difflib.SequenceMatcher(None, na, nb).ratio() > 0.8)
@@ -232,10 +247,10 @@ def analizar(proxy, fps, nf, palabras):
 
     estilo = {}
     if eventos:
-        pal = [e["palabras_voz"] or e["palabras_ocr"] for e in eventos]
-        med = float(np.median(pal))
-        modo_txt = ("palabra por palabra" if med <= 1.3 else "grupos de 2-3 palabras" if med <= 3.5
-                    else "frases cortas (4-7 palabras)" if med <= 7 else "frases completas")
+        for e in eventos:
+            e["palabras"] = palabras_evento(e)
+        med = float(np.median([e["palabras"] for e in eventos]))
+        modo_txt = modo_subtitulos(med)
         cubiertas = 0
         for w in palabras:
             if any(e["inicio"] - 0.2 <= w["t0"] <= e["fin"] + 0.2 for e in eventos):
