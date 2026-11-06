@@ -1,0 +1,53 @@
+# =====================================================================
+#  CONTENIDO PERSONAL DE CADA USUARIO — nunca se sube ni se sobrescribe
+#  (las carpetas se suben vacías, solo con su LEEME.md)
+# =====================================================================
+MI_*.md
+!MI_CANAL.ejemplo.md
+mi_config.json
+
+# Referencias (videos de otros creadores y sus análisis)
+00_Referencias/*
+!00_Referencias/LEEME.md
+
+# Personajes de cada usuario (y rigs/caras con licencia de Roblox)
+01_Personajes/1_Protagonista/*
+!01_Personajes/1_Protagonista/LEEME.md
+01_Personajes/2_Secundarios/*
+!01_Personajes/2_Secundarios/LEEME.md
+01_Personajes/3_Pueblo_NPC/*
+!01_Personajes/3_Pueblo_NPC/LEEME.md
+01_Personajes/_Plantillas_Rigs/*
+!01_Personajes/_Plantillas_Rigs/LEEME.md
+05_Recursos/*
+!05_Recursos/Caras/
+05_Recursos/Caras/*
+!05_Recursos/Caras/LEEME.md
+
+# Escenarios propios (el Pueblo por defecto SÍ se comparte)
+02_Escenarios/*
+!02_Escenarios/LEEME.md
+!02_Escenarios/Pueblo/
+
+# Episodios de cada usuario (la plantilla SÍ se comparte)
+03_Episodios/*
+!03_Episodios/_PLANTILLA_EPISODIO/
+
+99_Archivo/*
+!99_Archivo/LEEME.md
+
+# =====================================================================
+#  Archivos generados
+# =====================================================================
+*.blend1
+*.blend2
+__pycache__/
+*.pyc
+renders/
+pruebas_pose/
+previews/
+*.wav
+*.mp4
+*.mp3
+Thumbs.db
+desktop.ini

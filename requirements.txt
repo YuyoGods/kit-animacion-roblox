@@ -1,0 +1,5 @@
+numpy
+opencv-python>=4.10
+scenedetect>=0.7
+faster-whisper>=1.2
+matplotlib

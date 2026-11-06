@@ -1,0 +1,4 @@
+# Texto que dira el narrador (ElevenLabs). Una frase por linea.
+# Las lineas que empiezan con # se ignoran.
+# Uso: py 04_Herramientas/audio/voz_elevenlabs.py EP###_Nombre   (gasta creditos: confirmar antes)
+
