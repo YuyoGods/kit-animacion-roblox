@@ -1,7 +1,7 @@
 # 04 — Escenarios
 
-## Pueblo (`02_Escenarios/Pueblo/Pueblo_set.blend`)
-Escala: 1 unidad ≈ 1 stud de Roblox (personaje ≈ 4,5–5,6). Norte = **+Y**. Construido con los scripts de `02_Escenarios/Pueblo/scripts/` en este orden:
+## Pueblo (`Escenarios/Pueblo/Pueblo_set.blend`)
+Escala: 1 unidad ≈ 1 stud de Roblox (personaje ≈ 4,5–5,6). Norte = **+Y**. Construido con los scripts de `Escenarios/Pueblo/scripts/` en este orden:
 `build_pueblo.py` → `add_faroles.py` → `add_centro.py` → `mejoras_v3.py` → `mejoras_v4.py` → `colinas_anillo.py` → `escuela.py`.
 
 ### Mapa (coordenadas del mundo)
@@ -25,4 +25,4 @@ Escala: 1 unidad ≈ 1 stud de Roblox (personaje ≈ 4,5–5,6). Norte = **+Y**.
 - **Reloj** de la presidencia (rotación Y de las manecillas).
 
 ## Cómo agregar un escenario nuevo
-Crear `02_Escenarios/<Nombre>/` con `scripts/` (construcción repetible) y guardar un `<Nombre>_set.blend` limpio. Documentar aquí su mapa.
+Crear `Escenarios/<Nombre>/` con `scripts/` (construcción repetible) y guardar un `<Nombre>_set.blend` limpio. Documentar aquí su mapa.

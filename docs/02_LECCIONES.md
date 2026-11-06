@@ -37,5 +37,5 @@ Agregar aquí cada error nuevo con su solución. Formato: **Problema → Causa �
 24. **El usuario "ya no veía nada"**: había ocultado todas las colecciones (Ctrl+clic en el ojo) y apagado overlays. → `Alt+H`, encender ojos en el Outliner, `Shift+Alt+Z` para overlays. Encuadrar: `.` del teclado numérico (equivale a la F de Roblox Studio), vista frontal `1`.
 25. **Scripts largos con rutas Windows** fallan dentro de heredocs de bash (escapes `\U`). → Escribir los scripts con la herramienta de archivos, no con heredoc.
 26. **Claves de API pegadas en el chat** → no usarlas; pedir que se cambien y se guarden como variable de entorno.
-27. **OpenCV/PySceneDetect no abren videos con emojis o acentos en el nombre** ("BÚNKER 😭.mp4"). → Copiar el video con un nombre simple (`ref_01.mp4`) dentro de `00_Referencias/` antes de analizarlo.
+27. **OpenCV/PySceneDetect no abren videos con emojis o acentos en el nombre** ("BÚNKER 😭.mp4"). → El analizador trabaja sobre una copia liviana con nombre simple (`proxy.mp4`) que crea con FFmpeg (que sí acepta esos nombres).
 28. **Detección de cortes cuenta transiciones como cortes extra** (en EP001 detectó 13 en vez de 11 por el poste que tapa). → Confirmar cortes con hoja de contacto y ajustar el umbral (`ContentDetector(threshold=…)`).

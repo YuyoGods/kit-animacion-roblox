@@ -1,65 +1,41 @@
-# 07 — Análisis de referencias (patrones de cámara de otros creadores)
+# 07 — Analizador de videos y fórmulas de estilo
 
-## Objetivo
-Los creadores exitosos de historias animadas de Roblox **repiten un patrón de cámara** en casi todas sus tomas: cada cuánto cortan, cuándo hacen zoom, qué tipo de plano usan y cómo enfocan. Ese patrón es gran parte del "enganche".
-Meta: **medir** esos patrones fotograma por fotograma y convertirlos en **recetas de cámara** que nuestros episodios usen automáticamente.
+Objetivo: copiar **la fórmula** de los creadores que funcionan (ritmo, planos, cámara, efectos, subtítulos, sonido e historia) y aplicarla a nuestras animaciones ("hazlo al estilo de ClusterK"). Guía para personas: `Analizador/LEEME.md`.
 
-> Se analiza para aprender el **estilo de edición y cámara**, no para copiar historias, personajes ni escenas. Nuestros videos son propios.
+## Flujo de "entrenamiento" (cada vez que el usuario sube videos)
+1. Videos en `Analizador/Videos_para_analizar/<Creador>/`.
+2. `py -X utf8 Analizador/motor/analizar.py` → analiza solo lo nuevo (registro en `Resultados/registro.json`) y regenera `Estilos/<Creador>.json`, `<Creador>_formula.md` y `COMPARACION.md`.
+   - Correrlo en segundo plano si son muchos videos (≈2–3× la duración del video con GPU). Un video que falla no detiene a los demás.
+3. **Revisión de Claude** por cada video nuevo (lo que la máquina no mide bien):
+   - Leer `para_claude.md` y mirar `hojas/hoja_*.jpg` y `efectos/efecto_*.jpg`.
+   - Escribir `notas_claude.md` en la carpeta del video: gancho, estructura con segundos, misterio/retención, personajes, patrones de cámara, efectos reales (hojas, humo, líneas de velocidad, emojis…), subtítulos exactos, sonido, 5 reglas.
+   - Pasar a `Estilos/<Creador>_notas.md` las reglas que **se repiten en 2+ videos** (no copiar texto ni guiones de los creadores: solo patrones).
+4. Contarle al usuario lo nuevo que se aprendió (3–5 líneas) y cuántos videos lleva cada creador.
 
-## Qué medir (ficha de estilo)
-| # | Aspecto | Qué anotar |
+## Usar una fórmula al animar
+- Leer `Estilos/<Creador>.json` (números) y `<Creador>_notas.md` (reglas).
+- Guion: duración típica, gancho en los primeros segundos, giros por minuto, final con misterio según las notas.
+- Tabla de tomas: duraciones según `ritmo` (mediana y rango, más rápido donde la fórmula lo indique), mezcla de `planos_pct`, movimientos de `camara_pct`, temblor (`camara.temblor_*`), golpes de zoom por minuto, transiciones.
+- Subtítulos: `subtitulos` (modo, palabras, altura, tamaño, color, resaltado, mayúsculas, pop) → parámetros de `armar_video.py`.
+- Sonido: LUFS, golpes de sonido por minuto, música sí/no.
+- Comparar el resultado: analizar nuestra vista previa con `--creador Nosotros` y ver `COMPARACION.md`.
+
+## Qué mide cada dato (y qué tan confiable es)
+| Dato | Cómo | Confiable |
 |---|---|---|
-| 1 | **Ritmo de cortes** | duración de cada toma; promedio, mediana, mín/máx; cortes por minuto |
-| 2 | **Tipo de plano** | general / medio / primer plano / detalle / dron / POV; en qué orden se alternan |
-| 3 | **Movimiento dentro de la toma** | fija, acercamiento (zoom in), alejamiento, paneo, seguimiento, órbita, temblor; velocidad (% de escala por segundo) |
-| 4 | **Zoom** | cada cuántos segundos/tomas, cuánto (110 %, 130 %), duración, si es de cámara o "golpe" de edición |
-| 5 | **Transiciones** | corte seco, objeto que tapa, barrido rápido, flash, zoom; cuándo se usan (cambio de lugar/tiempo) |
-| 6 | **Encuadre** | dónde queda el personaje (centro/tercios), altura de cámara, hacia dónde mira |
-| 7 | **Sincronía con la voz** | ¿corta en cada frase? ¿en palabras clave? ¿cambia la expresión del personaje? |
-| 8 | **Subtítulos** | palabras por bloque, posición, tamaño, colores, animación |
-| 9 | **Sonido** | efectos por minuto, tipos, música |
-| 10 | **Gancho** | qué pasa en los primeros 3 segundos |
+| Cortes | PySceneDetect (umbral 22) + verificación: salto aislado ≥ 2× los cuadros vecinos o ≥ 42 | Alta (EP001: 11/11, 0 falsos). Cortes escondidos tras un objeto que tapa pueden no verse (es su intención) |
+| Transiciones | brillo (fundido/destello), prueba de mezcla A+B (disolvencia), movimiento + desenfoque (barrido), zoom final | Media |
+| Cámara | alineación ORB+RANSAC entre cuadros: zoom, paneo, giro; temblor = residuo de alta frecuencia (umbral 2,5) | Media-alta; con mucho movimiento del personaje la cámara que lo sigue sale como "acercamiento/alejamiento" |
+| Tipo de plano | Grounding DINO: alto de la cara (≥40 % primerísimo, ≥22 % primer plano, ≥11 % medio) y del cuerpo (≥85 % medio, ≥40 % entero) | Media-alta |
+| Ambiente, hora, lugar | CLIP sin entrenar | Baja-media (orientativo) |
+| Efectos | destellos, negro/blanco, partículas (muchos puntos que se mueven aparte de la cámara), sacudida de impacto, imagen congelada, cambio de color, cámara lenta | **Candidatos**: Claude los confirma mirando `efectos/` |
+| Subtítulos | EasyOCR a 6 muestras/s + fotograma a fotograma en los primeros 12 (inicio exacto y pop) | Alta en posición/tamaño/colores; el texto leído puede tener errores (se usa la voz para contar palabras) |
+| Voz | Whisper large-v3-turbo (GPU) con tiempo por palabra; descarta frases inventadas en silencios | Alta |
+| Sonido | LUFS (FFmpeg ebur128), golpes fuera de la voz (librosa), fondo armónico ⇒ música probable | Media |
+| Historia | palabras clave de giro, preguntas, final, llamados a la acción | Baja: lo importante lo escribe Claude en las notas |
 
-## Método (herramientas)
-1. **Cortes**: detección de cambios de escena con FFmpeg (`select='gt(scene,0.3)',showinfo`) → tiempos de corte → duraciones. Confirmar con hojas de contacto.
-2. **Fotogramas**: 1 cada 0,5 s + hoja de contacto por toma (inicio/mitad/fin) → Claude clasifica tipo de plano, encuadre y transiciones viendo las imágenes.
-3. **Zoom, paneo y temblor**: comparar fotogramas seguidos (flujo óptico / transformación entre fotogramas) → escala y desplazamiento por fotograma → detecta acercamientos, alejamientos, paneos y la amplitud/frecuencia del temblor. *Requiere instalar `opencv-python` (pedir permiso antes).*
-4. **Narración**: transcripción con tiempos por palabra → comparar cortes con frases y palabras clave.
-5. **Resumen**: tabla de tomas + estadísticas + reglas en lenguaje simple.
-
-## Uso (herramienta lista)
-```
-py -X utf8 04_Herramientas/analisis/analizar_referencia.py "RUTA\video.mp4" --creador NombreDelCreador
-```
-Opciones: `--nombre ref_03` (nombre de la carpeta), `--umbral 22` (más bajo = detecta más cortes; por defecto 27), `--sin-voz` (no transcribir).
-Instalado: OpenCV 5 (zoom/paneo/temblor por fotograma), PySceneDetect 0.7 (cortes), faster-whisper 1.2 con modelo **large-v3-turbo** (transcripción en español con tiempos por palabra, en la PC, gratis), matplotlib (gráficas). Tarda ~20–40 s por cada 30 s de video.
-
-Qué entrega por video:
-- **`ficha.md`**: resumen (tomas, cortes por minuto, duración media/mediana, tipos de toma, zoom medio, ritmo de narración, % de cortes que caen en una palabra) + tabla toma por toma con su texto.
-- **`hojas/`**: hojas de contacto (inicio/mitad/fin de cada toma con sus datos) → Claude las revisa para anotar tipo de plano, encuadre y transiciones.
-- **`grafica.png`**: duración de cada toma, zoom acumulado y temblor a lo largo del video.
-- **`datos.json`**: todo en datos para la receta de cámara.
-- Además actualiza **`00_Referencias/<Creador>/ficha_estilo.md`** con el promedio de todos los videos de ese creador.
-
-Probado con EP001 (`00_Referencias/_Prueba_EP001/`): midió bien los acercamientos de la toma frontal (+20 %), el temblor fuerte de la cámara de frente al correr (13,5–17,3 s), el ritmo de narración (3 palabras/s) y que el 83 % de los cortes caen en una palabra. Limitación: a veces junta dos tomas cuando el cambio es suave (bajar `--umbral`).
-
-## Resultado por referencia
-```
-00_Referencias/<Creador_o_Serie>/
-├── videos/            ← MP4 originales del usuario
-├── fotogramas/        ← hojas de contacto
-├── datos.json         ← cada toma: inicio, duración, tipo, movimiento, zoom, transición
-└── ficha_estilo.md    ← estadísticas + reglas ("toma media 1,6 s; zoom in cada 2 tomas al 115 %…")
-```
-
-## Cómo se usa después
-Las reglas de la ficha alimentan una **receta de cámara** (`04_Herramientas/`) que, a partir de la tabla de tomas del guion, genera las cámaras del episodio con ese ritmo (duraciones, tipos de plano, zooms, transiciones). Después se revisa con `revisar_camaras.py` como siempre.
-
-## Primeras observaciones (videos analizados el 2026-11-05)
-Tres videos de un mismo creador ("NO ENTRES AL BÚNKER", "NO TE CASES CON ELLA", "APUNTE MAL"), formato 9:16 a 30 fps, 1–2 min:
-- **Cortes muy rápidos**: en "Búnker" 41 cortes en 115 s → **≈ 2,8 s por toma** (rango ≈ 1,1–6 s).
-- **Subtítulos de una palabra** en el centro-bajo, algunas palabras clave en rojo/amarillo.
-- Mucho **primer plano de cara** con cambios de expresión en cada frase emocional; planos generales cortos para ubicar el lugar.
-- Escenarios muy coloridos con iluminación fuerte de color (rojo de alarma, verde, azul neón).
-- Narrador en primera persona contando la historia de corrido; cada frase tiene su imagen.
-*(Pendiente: medir zooms y movimientos con el método completo.)*
+## Lecciones del analizador
+- Los subtítulos quemados no se mueven entre cuadros y engañan la verificación de cortes por alineación: por eso se usa el salto aislado.
+- Whisper inventa "¡Suscríbete al canal!" en silencios finales: se descarta por logprob bajo + velocidad imposible (> 5,5 palabras/s).
+- El cielo o el fondo se cuelan en el color del subtítulo: el relleno se mide solo en pixeles claros pegados al contorno oscuro.
+- Primera carga de modelos: ~1 min (después quedan en caché en `%USERPROFILE%\.cache`).

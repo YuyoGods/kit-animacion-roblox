@@ -22,7 +22,7 @@
 - Zoom in/out animando el ángulo de la lente (`angle_y`), no solo moviendo la cámara.
 
 ## Revisión obligatoria
-1. `04_Herramientas/blender/revisar_camaras.py` (ejecutar en el Blender del episodio):
+1. `Herramientas/blender/revisar_camaras.py` (ejecutar en el Blender del episodio):
    - Rayos de la cámara a cabeza y pecho → reporta objetos que tapan.
    - Rejilla de rayos → reporta objetos cercanos que ocupan > 22 % del cuadro (el piso no cuenta).
    - Reporta cuándo la cabeza/pecho salen de cuadro.

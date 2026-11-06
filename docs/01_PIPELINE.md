@@ -3,9 +3,9 @@
 Marcar cada paso. No saltar la **revisión de cámaras** (paso 6).
 
 ## 0. Preparar
-- [ ] Copiar `03_Episodios/_PLANTILLA_EPISODIO` → `03_Episodios/EP###_Titulo`.
+- [ ] Copiar `Episodios/_PLANTILLA_EPISODIO` → `Episodios/EP###_Titulo`.
 - [ ] Llenar `GUION.md` (idea, historia, tabla de tomas).
-- [ ] Referencias del usuario (videos MP4) → `00_Referencias/` o `referencias/` del episodio.
+- [ ] Referencias del usuario (videos MP4) → `Analizador/Videos_para_analizar/<Creador>/` (estilo) o `referencias/` del episodio (una toma concreta).
   - Para analizarlas: `ffmpeg -i video.mp4 -vf "fps=1/2,scale=180:320,tile=8x5" hoja.jpg` y detección de cortes con `select='gt(scene,0.3)',showinfo`.
 
 ## 1. Guion y tomas
@@ -15,12 +15,12 @@ Marcar cada paso. No saltar la **revisión de cámaras** (paso 6).
 - [ ] El usuario aprueba el guion **antes** de animar.
 
 ## 2. Personajes
-- [ ] ¿Existe en `01_Personajes/`? Si no: exportar desde Roblox Studio (OBJ del cuerpo + OBJ de accesorios con texturas) y armar rig (ver `03_PERSONAJES.md`).
+- [ ] ¿Existe en `Personajes/`? Si no: exportar desde Roblox Studio (OBJ del cuerpo + OBJ de accesorios con texturas) y armar rig (ver `03_PERSONAJES.md`).
 - [ ] Probar el rig: pose de prueba renderizada de frente/lado/espalda.
 
 ## 3. Escenario
 - [ ] Partir del `.blend` limpio del escenario o de su script.
-- [ ] Todo cambio al escenario se hace con un script guardado en `02_Escenarios/<nombre>/scripts/` (se puede repetir).
+- [ ] Todo cambio al escenario se hace con un script guardado en `Escenarios/<nombre>/scripts/` (se puede repetir).
 - [ ] Anotar coordenadas nuevas en `04_ESCENARIOS.md`.
 
 ## 4. Montaje del episodio
@@ -45,9 +45,12 @@ Marcar cada paso. No saltar la **revisión de cámaras** (paso 6).
 - [ ] El usuario la revisa.
 
 ## 8. Voz, subtítulos y efectos
-- [ ] Texto final en `EP###/narracion.txt` → `py 04_Herramientas/audio/voz_elevenlabs.py EP###_Titulo` → `audio/narracion.mp3` + tiempos por letra. Confirmar con el usuario antes de gastar créditos.
+- [ ] Texto final en `EP###/narracion.txt` → `py Herramientas/audio/voz_elevenlabs.py EP###_Titulo` → `audio/narracion.mp3` + tiempos por letra. Confirmar con el usuario antes de gastar créditos.
 - [ ] Medir dónde cae cada frase vs. su toma; mover frases (`NEW_START`) para que coincidan con la acción; alargar la última toma si hace falta.
-- [ ] Copiar `04_Herramientas/audio/armar_video.py` a `EP###/scripts/`, editar frases/efectos/subtítulos → `py armar_video.py EP###_Titulo preview` → voz + efectos + subtítulos sobre la vista previa. Revisar fotos con subtítulos y nivel de audio (≈ −14/−15 LUFS).
+- [ ] Copiar `Herramientas/audio/armar_video.py` a `EP###/scripts/`, editar frases/efectos/subtítulos → `py armar_video.py EP###_Titulo preview` → voz + efectos + subtítulos sobre la vista previa. Revisar fotos con subtítulos y nivel de audio (≈ −14/−15 LUFS).
+
+## Cambios en una parte del video
+- [ ] Cambiar solo esa parte en el `.blend`, guardar → `py Herramientas/rehacer_tramo.py EP###_Titulo DESDE HASTA` (respalda, renderiza el tramo y re-arma el MP4). `--deshacer` regresa la versión anterior.
 
 ## 9. Render final
 - [ ] Confirmar con el usuario (≈1 h por 30 s).

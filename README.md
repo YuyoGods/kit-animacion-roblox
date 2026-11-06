@@ -15,42 +15,44 @@ Incluye un mapa listo (**el Pueblo**: calle con casas, plaza con fuente, preside
 | FFmpeg (`winget install Gyan.FFmpeg`) | Armar el video con audio y subtítulos |
 | [Git](https://git-scm.com/download/win) | Descargar y actualizar el kit |
 | *Opcional*: cuenta de [ElevenLabs](https://elevenlabs.io) | Voz del narrador |
+| *Recomendado*: tarjeta NVIDIA (RTX) | Que el Analizador de videos sea rápido (sin ella funciona, pero lento) |
 | *Opcional*: Roblox Studio | Exportar tus personajes |
 
 ## Instalación
-1. El repositorio es **privado**: pídele al dueño que te invite y acepta la invitación en GitHub.
-2. Descarga el kit (en la carpeta donde lo quieras tener):
+1. Descarga el kit (en la carpeta donde lo quieras tener):
    ```
    git clone https://github.com/YuyoGods/kit-animacion-roblox.git "YOUTUBE ANIMACION"
    ```
-3. Entra a la carpeta y corre el instalador (revisa todo y crea tus archivos personales; nunca borra nada):
+2. Entra a la carpeta y corre el instalador (revisa todo, instala lo que falta y crea tus archivos personales; nunca borra nada):
    ```
    cd "YOUTUBE ANIMACION"
    py instalar.py --paquetes
    ```
-4. **BlenderMCP**: descarga `addon.py` del proyecto blender-mcp → Blender → *Edit → Preferences → Add-ons → Install from Disk* → actívalo. Luego, en la vista 3D presiona **N** → pestaña **BlenderMCP** → **Connect**.
-5. Abre Claude → pestaña **Code** → elige la carpeta del kit. Dile:
+3. **BlenderMCP**: descarga `addon.py` del proyecto blender-mcp → Blender → *Edit → Preferences → Add-ons → Install from Disk* → actívalo. Luego, en la vista 3D presiona **N** → pestaña **BlenderMCP** → **Connect**.
+4. Abre Claude → pestaña **Code** → elige la carpeta del kit. Dile:
    > Lee CLAUDE.md y ayúdame a llenar MI_CANAL.md
 
 ## Dónde va cada cosa
 | Carpeta | Qué pones tú |
 |---|---|
-| `01_Personajes/1_Protagonista/` | Tu personaje principal (exportado de Roblox Studio) |
-| `01_Personajes/2_Secundarios/` | Familia, amigos, personajes importantes |
-| `01_Personajes/3_Pueblo_NPC/` | Gente genérica del pueblo |
-| `01_Personajes/_Plantillas_Rigs/` | Los Roblox Starter Rigs (te los pasa el dueño del kit) |
-| `05_Recursos/Caras/` | Caras PNG por emoción: `feliz.png`, `enojado.png`, `asombro.png`… |
-| `00_Referencias/` | Videos de otros creadores para copiar su estilo de cámara |
-| `02_Escenarios/<TuMapa>/` | Mapas propios o tu copia modificada del Pueblo |
-| `03_Episodios/` | Tus episodios (Claude los crea desde la plantilla) |
+| `Personajes/Protagonista/` | Tu personaje principal (exportado de Roblox Studio) |
+| `Personajes/Secundarios/` | Familia, amigos, personajes importantes |
+| `Personajes/Pueblo_NPC/` | Gente genérica del pueblo |
+| `Personajes/Plantillas_Rigs/` | Los Roblox Starter Rigs (te los pasa el dueño del kit) |
+| `Caras/` | Caras PNG por emoción: `feliz.png`, `enojado.png`, `asombro.png`… |
+| `Analizador/Videos_para_analizar/<Creador>/` | Videos de otros creadores para sacar su fórmula (ver `Analizador/LEEME.md`) |
+| `Escenarios/` | Los mapas, uno por carpeta: `Pueblo/` es el original; tus copias (`Pueblo_v2/`) y mapas nuevos (`Medieval/`) van al lado |
+| `Episodios/` | Tus videos terminados y en proceso (Claude los crea desde la plantilla) |
+| `Respaldos/` | Versiones viejas que no se borran |
 
-Cada carpeta trae un `LEEME.md` que explica qué va ahí.
+Cada carpeta trae un `LEEME.md` que explica qué va ahí. Las carpetas `docs/` y `Herramientas/` son para Claude; no necesitas abrirlas.
 
 ## Cómo se usa (ejemplos de lo que le pides a Claude)
-- *"Ya subí a mi personaje a 1_Protagonista, ponle su rig."*
+- *"Ya subí a mi personaje a Protagonista, ponle su rig."*
 - *"Esta es mi hermana, ponle rig y agrégala como secundaria."*
 - *"Quiero un Short de 30 s: mi protagonista llega tarde a la escuela…"* → guion → animación → revisión de cámaras → vista previa → voz y subtítulos → render final.
-- *"Analiza este video de referencia del creador X."*
+- *"Analiza los videos nuevos"* (después de subir videos a `Analizador/Videos_para_analizar/<Creador>/`) y luego *"hazlo al estilo de <Creador>"*.
+- *"Del segundo 10 al 15 no me gustó, cámbiale…"* → Claude rehace solo ese tramo.
 
 Claude te enseña fotos de avance antes de renderizar y te pide permiso antes de gastar créditos de ElevenLabs o hacer renders largos.
 
@@ -66,7 +68,7 @@ Cierra y vuelve a abrir Claude. El id de la voz va en `mi_config.json` → `"voz
 git pull
 ```
 Tus cosas **nunca se borran ni se sobrescriben**: personajes, caras, episodios, referencias, mapas propios, `MI_CANAL.md`, `MI_BITACORA.md` y `mi_config.json` están fuera del repositorio (`.gitignore`).
-Si git dice que tienes cambios en archivos del kit, **no fuerces nada**: pídele a Claude que lo revise (los respalda en `99_Archivo/` antes de actualizar).
+Si git dice que tienes cambios en archivos del kit, **no fuerces nada**: pídele a Claude que lo revise (los respalda en `Respaldos/` antes de actualizar).
 Novedades de cada versión: `docs/CAMBIOS.md`.
 
 ## Licencias y créditos

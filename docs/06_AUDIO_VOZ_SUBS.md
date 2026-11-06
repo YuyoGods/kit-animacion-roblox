@@ -1,7 +1,7 @@
 # 06 — Voz, subtítulos, efectos y mezcla
 
 ## Voz (ElevenLabs)
-- Script: `py 04_Herramientas/audio/voz_elevenlabs.py EP###_Titulo` → lee `EP###/narracion.txt`, guarda en `EP###/audio/`. La voz sale de `mi_config.json` → `voz_narrador`.
+- Script: `py Herramientas/audio/voz_elevenlabs.py EP###_Titulo` → lee `EP###/narracion.txt`, guarda en `EP###/audio/`. La voz sale de `mi_config.json` → `voz_narrador`.
 - Clave: variable de entorno de usuario `ELEVENLABS_API_KEY` (el script la lee de Windows; nunca se imprime). Para crearla (la pone el usuario):
   `[Environment]::SetEnvironmentVariable("ELEVENLABS_API_KEY", "CLAVE", "User")`
 - Voz: la de `MI_CANAL.md` / `mi_config.json`. Modelo `eleven_multilingual_v2`, stability 0,4 · similarity 0,75 · style 0,3 · speaker boost.

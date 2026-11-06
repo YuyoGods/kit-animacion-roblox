@@ -3,3 +3,15 @@ opencv-python>=4.10
 scenedetect>=0.7
 faster-whisper>=1.2
 matplotlib
+librosa>=0.11
+open_clip_torch>=2.24
+transformers>=4.45
+scikit-image
+python-bidi
+PyYAML
+Shapely
+pyclipper
+# PyTorch con CUDA (tarjetas NVIDIA): instalar aparte segun la tarjeta, ej. RTX 50xx:
+#   py -m pip install torch torchvision --index-url https://download.pytorch.org/whl/cu128
+# EasyOCR se instala sin dependencias para no chocar con opencv-python:
+#   py -m pip install --no-deps easyocr

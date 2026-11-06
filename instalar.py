@@ -36,18 +36,30 @@ else:
     pendientes.append("Instalar Python 3.11+ desde python.org")
 
 # 2) Paquetes
-PAQ = {"numpy": "numpy", "cv2": "opencv-python", "scenedetect": "scenedetect",
-       "faster_whisper": "faster-whisper", "matplotlib": "matplotlib"}
+PAQ = {"numpy": "numpy", "cv2": "opencv-python", "scenedetect": "scenedetect", "faster_whisper": "faster-whisper",
+       "matplotlib": "matplotlib", "librosa": "librosa", "open_clip": "open_clip_torch", "transformers": "transformers",
+       "torch": "torch", "easyocr": "easyocr"}
 faltan = [pip for mod, pip in PAQ.items() if importlib.util.find_spec(mod) is None]
 if faltan and "--paquetes" in sys.argv:
     print("Instalando:", ", ".join(faltan))
-    subprocess.run([sys.executable, "-m", "pip", "install", "-r", ruta("requirements.txt")], check=False)
+    pip = [sys.executable, "-m", "pip", "install"]
+    if "torch" in faltan:   # PyTorch con CUDA 12.8 (sirve para RTX 20xx a 50xx); sin tarjeta NVIDIA funciona igual pero lento
+        subprocess.run(pip + ["torch", "torchvision", "--index-url", "https://download.pytorch.org/whl/cu128"], check=False)
+    subprocess.run(pip + ["-r", ruta("requirements.txt")], check=False)
+    if "easyocr" in faltan:
+        subprocess.run(pip + ["--no-deps", "easyocr"], check=False)
     faltan = [pip for mod, pip in PAQ.items() if importlib.util.find_spec(mod) is None]
 if faltan:
     print(FALTA, "paquetes de Python:", ", ".join(faltan))
     pendientes.append("Instalar paquetes: py instalar.py --paquetes")
 else:
-    print(OK, "paquetes de Python (numpy, OpenCV, PySceneDetect, faster-whisper, matplotlib)")
+    print(OK, "paquetes de Python (OpenCV, PySceneDetect, Whisper, PyTorch, EasyOCR, CLIP, transformers, librosa)")
+    try:
+        import torch
+        print(OK if torch.cuda.is_available() else AVISO, "GPU para el analizador:",
+              torch.cuda.get_device_name(0) if torch.cuda.is_available() else "no (funciona con CPU, mas lento)")
+    except Exception:
+        pass
 
 # 3) FFmpeg con subtitulos (libass)
 ff = shutil.which("ffmpeg")
@@ -93,8 +105,8 @@ else:
     print(OK, "mi_config.json ya existe (no se toca)")
 crear_si_no_existe("MI_CANAL.md", origen="MI_CANAL.ejemplo.md")
 crear_si_no_existe("MI_BITACORA.md", texto="# Mi bitacora (personal)\n\nUna entrada por sesion de trabajo (lo mas nuevo arriba).\n")
-for c in ["00_Referencias", "01_Personajes/1_Protagonista", "01_Personajes/2_Secundarios", "01_Personajes/3_Pueblo_NPC",
-          "01_Personajes/_Plantillas_Rigs", "02_Escenarios", "03_Episodios", "05_Recursos/Caras", "99_Archivo"]:
+for c in ["Analizador/Videos_para_analizar", "Analizador/Resultados", "Analizador/Estilos", "Personajes/Protagonista", "Personajes/Secundarios", "Personajes/Pueblo_NPC",
+          "Personajes/Plantillas_Rigs", "Escenarios", "Episodios", "Caras", "Respaldos"]:
     os.makedirs(ruta(c), exist_ok=True)
 
 # 6) Opcionales
@@ -118,8 +130,8 @@ try:
     print(OK, "Blender abierto con BlenderMCP conectado")
 except OSError:
     print(AVISO, "BlenderMCP no responde (abre Blender y presiona Connect en la pestana BlenderMCP; ver README)")
-if os.listdir(ruta("01_Personajes", "1_Protagonista")) in ([], ["LEEME.md"]):
-    pendientes.append("Poner tu protagonista en 01_Personajes/1_Protagonista/<Nombre>/ y pedirle a Claude su rig")
+if os.listdir(ruta("Personajes", "Protagonista")) in ([], ["LEEME.md"]):
+    pendientes.append("Poner tu protagonista en Personajes/Protagonista/<Nombre>/ y pedirle a Claude su rig")
 
 print("\n== Pendientes ==" if pendientes else "\n== Todo listo ==")
 for p in pendientes:
