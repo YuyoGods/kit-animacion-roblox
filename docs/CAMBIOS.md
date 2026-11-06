@@ -3,6 +3,11 @@
 > Una entrada por cada actualización que se sube al repositorio (lo más nuevo arriba).
 > Si una actualización renombra o mueve archivos compartidos, avisarlo aquí.
 
+## v0.3.1 — 2026-11-06 — Segundo entrenamiento
+- **ClusterK y Gelo con 5 videos cada uno** (confiabilidad media). Fórmulas, notas y `COMPARACION.md` actualizadas.
+- ClusterK: tipos de giro (narrador engañado con montaje de pistas, golpe final), retos por rondas con cameo famoso, finales abiertos para parte 2.
+- Gelo: alcalde villano que se aprovecha de la regla (5 de 5), monstruo incomprendido, "suscríbete" pegado al tema, protagonista a color contra el pueblo gris, carteles en la escena.
+
 ## v0.3.0 — 2026-11-06 — Skills y primer entrenamiento
 - **Skills del kit** (`.claude/skills/`): `instalar-kit`, `poner-rig`, `analizar-videos`, `nuevo-episodio`, `rehacer-tramo`, `actualizar-kit`. Claude las usa solo al abrir la carpeta del kit.
 - **Primer entrenamiento** (`Analizador/Estilos/`): fórmulas y notas de **ClusterK** y **Gelo** (3 videos cada uno, confiabilidad baja: se irán afinando) + `COMPARACION.md`.
