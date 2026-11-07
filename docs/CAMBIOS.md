@@ -3,6 +3,9 @@
 > Una entrada por cada actualización que se sube al repositorio (lo más nuevo arriba).
 > Si una actualización renombra o mueve archivos compartidos, avisarlo aquí.
 
+## v0.4.1 — 2026-11-06 — Voz de corrido
+- `recortar_pausas.py` deja pausas de máximo 0,15 s entre palabras y 0,25 s después de "…": la voz se oye hablando de corrido, a velocidad normal.
+
 ## v0.4.0 — 2026-11-06 — La voz manda el ritmo
 **Reglas nuevas para Shorts** (CLAUDE.md, reglas de oro 9–12; skill `nuevo-episodio` actualizada):
 - **Cada escena lleva voz** (no quedan partes calladas): el video dura lo que la voz, aunque el guion sea corto. Una línea de `narracion.txt` = una toma (1,5–2,5 s, corte en cada idea).

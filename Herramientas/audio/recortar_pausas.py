@@ -1,6 +1,6 @@
 # Recorta las pausas largas de la voz SIN que se note el corte, para que la animacion vaya continua (sin huecos).
 # Solo quita silencio entre palabras (nunca corta una palabra) y une los pedazos con un fundido muy corto.
-#   py Herramientas/audio/recortar_pausas.py EP###_Titulo [--audio voz.mp3] [--max 0.22] [--max_suspenso 0.4]
+#   py Herramientas/audio/recortar_pausas.py EP###_Titulo [--audio voz.mp3] [--max 0.15] [--max_suspenso 0.25]
 # Entrada:
 #   - Voz de ElevenLabs (voz_elevenlabs.py): audio/narracion.mp3 + audio/narracion_tiempos.json (tiempos por letra).
 #   - Voz propia (grabada o creada en otra app/cuenta): --audio <archivo>. Los tiempos de cada palabra se sacan
@@ -17,8 +17,8 @@ from config import episodio  # noqa: E402
 ap = argparse.ArgumentParser()
 ap.add_argument("ep")
 ap.add_argument("--audio", help="voz propia (cualquier formato); si no, audio/narracion.mp3 de ElevenLabs")
-ap.add_argument("--max", type=float, default=0.22, help="silencio maximo entre palabras (s)")
-ap.add_argument("--max_suspenso", type=float, default=0.40, help="silencio maximo despues de '...' (s)")
+ap.add_argument("--max", type=float, default=0.15, help="silencio maximo entre palabras (s)")
+ap.add_argument("--max_suspenso", type=float, default=0.25, help="silencio maximo despues de '...' (s)")
 ap.add_argument("--idioma", default="es")
 a = ap.parse_args()
 EP = episodio(a.ep)

@@ -8,7 +8,7 @@
 - Probar otra voz sin cambiar la del canal: `py Herramientas/audio/voz_elevenlabs.py EP###_Titulo --voz ID_DE_LA_VOZ`.
 - **Velocidad normal**: no acelerar la voz (con `--velocidad` el personaje pierde su esencia). Que suene con emoción.
 - **Voz propia** (grabada o creada en otra cuenta/app): ponerla en `audio/` y usar `recortar_pausas.py EP### --audio su_voz.mp3` (saca los tiempos de cada palabra con Whisper).
-- **Recortar pausas**: `py Herramientas/audio/recortar_pausas.py EP###` deja `audio/voz.wav` sin silencios largos (máx. 0,22 s entre palabras, 0,4 s después de "…"); solo quita silencio, nunca corta palabras, y une con un fundido inaudible. El usuario escucha la voz antes y después.
+- **Recortar pausas**: `py Herramientas/audio/recortar_pausas.py EP###` deja `audio/voz.wav` sin silencios largos (máx. 0,15 s entre palabras y 0,25 s después de "…": se oye hablando de corrido); solo quita silencio, nunca corta palabras, y une con un fundido inaudible. El usuario escucha la voz antes y después.
 - Endpoint con tiempos: `/v1/text-to-speech/{voz}/with-timestamps` → MP3 + tiempo de cada letra (`narracion_tiempos.json`).
 - Escribir con "..." para pausas y "¡!" para emoción. Generar todo el texto en una sola llamada (suena continuo).
 - **Confirmar con el usuario antes de gastar créditos.**
