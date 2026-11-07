@@ -47,6 +47,7 @@ Sistema para hacer **animaciones 3D estilo Roblox en Blender con Claude** (media
 │   ├── 05_CAMARAS_Y_TOMAS.md  ← tipos de toma, transiciones, revisión de cámaras
 │   ├── 06_AUDIO_VOZ_SUBS.md   ← ElevenLabs, subtítulos, efectos, mezcla
 │   ├── 07_ANALISIS_REFERENCIAS.md ← cómo medir patrones de cámara de otros creadores
+│   ├── 08_HISTORIAS.md        ← cómo escribir historias con misterio y giro que no se adivine
 │   ├── CAMBIOS.md             ← versiones del kit (qué trae cada actualización)
 │   └── IDEAS.md               ← mejoras pendientes del kit
 ├── Personajes/                ← biblioteca de personajes (ver Personajes/LEEME.md)
@@ -113,14 +114,14 @@ Nombres: episodios `EP001_Titulo_Corto`, cámaras `CR_Cam_S#_Nombre`, marcadores
 
 ## 6. Flujo de trabajo (resumen — detalle en `docs/01_PIPELINE.md`)
 
-1. **Idea y guion** (usuario + Claude) → copiar `Episodios/_PLANTILLA_EPISODIO` como `EP###_Titulo` → `GUION.md` con tabla de tomas.
-2. **Personajes**: si es nuevo, importar OBJ de Roblox + crear rig R15 (`Herramientas/blender/armar_rig_r15_plantilla.py`, ver `docs/03_PERSONAJES.md`).
-3. **Escenario**: partir de `Escenarios/...` (agregar cosas con scripts, nunca a mano sin registrar).
-4. **Animación** con script por episodio (trayectorias, poses, ciclos) + cámaras por toma.
-5. **Revisión obligatoria**: `revisar_camaras.py` (obstrucciones/fuera de cuadro) + fotos de inicio/medio/fin de cada toma. Corregir antes de renderizar.
-6. **Vista previa** (50 %) → el usuario aprueba.
-7. **Voz** (`narracion.txt` → `voz_elevenlabs.py`, confirmar créditos) → acomodar frases a sus tomas → **subtítulos + efectos** → `armar_video.py EP### preview`.
-8. **Render final** (100 %) → `armar_video.py EP### final` → el usuario revisa. Publicar solo si lo pide.
+1. **Idea y guion** (usuario + Claude) → copiar `Episodios/_PLANTILLA_EPISODIO` como `EP###_Titulo` → `GUION.md` + `narracion.txt` (**una línea = una toma**, voz continua sin huecos) → el usuario aprueba el texto.
+2. **Voz primero, y el usuario la escucha y la aprueba** antes de animar. Cada quien usa **su propia voz**: la de su cuenta de ElevenLabs (`voz_elevenlabs.py EP###`, confirmar créditos; velocidad normal, sin acelerar) o una voz ya hecha que entregue (`--audio`). Luego `py Herramientas/audio/recortar_pausas.py EP###` (quita silencios largos sin que se note el corte) → `py Herramientas/audio/tomas_desde_voz.py EP###` (cada toma empieza en su línea; fotograma de cada palabra en `audio/tomas_voz.json`).
+3. **Personajes**: si es nuevo, rig automático (`armar_rig_r15_auto.py`, ver `docs/03_PERSONAJES.md`) y caras por textura si se puede.
+4. **Escenario**: partir de `Escenarios/...` (agregar cosas con scripts, nunca a mano sin registrar).
+5. **Animación** con script por episodio que lee `tomas_voz.json` (los golpes caen en su palabra) + cámaras por toma + caras por emoción.
+6. **Revisión obligatoria**: `revisar_camaras.py` (obstrucciones/fuera de cuadro) + hoja de contacto de cada toma. Corregir antes de renderizar.
+7. **Vista previa** (50 %): **preguntar** si quiere renderizar con 2 Blender en paralelo (`py Herramientas/render_paralelo.py EP### preview`, más rápido pero usa más memoria de video) → `armar_video.py EP### preview` (voz de corrido, subtítulos automáticos de 1–2 palabras, efectos que coinciden con lo que pasa) → el usuario aprueba.
+8. **Render final** (100 %, `render_paralelo.py EP### final`) → `armar_video.py EP### final` → el usuario revisa. Publicar solo si lo pide.
 9. **¿No le gustó una parte?** ("del segundo 10 al 15 cámbiale…"): cambiar solo eso en el `.blend`, guardar y `py Herramientas/rehacer_tramo.py EP### 10 15` (vista previa) o `--final`. Nunca re-renderizar todo por un cambio parcial. Si el cambio mueve tiempos (dura más o menos), avisar: eso sí obliga a re-renderizar desde ese punto.
 10. **Estilo de un creador** ("al estilo de ClusterK"): leer `Analizador/Estilos/<Creador>.json` + `_notas.md` antes del guion y la tabla de tomas (ver `docs/07_ANALISIS_REFERENCIAS.md`).
 
@@ -134,6 +135,10 @@ Nombres: episodios `EP001_Titulo_Corto`, cámaras `CR_Cam_S#_Nombre`, marcadores
 6. Correr con **movimiento de cuerpo** (brazos, torso, cadera, cabeza) y cámara de frente con temblor de lado a lado.
 7. Efectos de sonido **pocos y con sentido**; la voz siempre manda.
 8. Guardar el `.blend` del episodio en su carpeta y anotar en `MI_BITACORA.md` lo que se hizo.
+9. **Shorts cortos y rápidos: la voz manda el ritmo.** **Cada escena lleva voz**: no quedan partes calladas. No se trata de más palabras: el video dura lo que dura la voz (si el guion es corto, el video es corto) y cada toma tiene su frase (1,5–2,5 s, corte en cada idea, cámaras que cambian rápido). Frases concretas ("no pienses en un elefante rosa, porque… ¡pop!"). La voz va a **velocidad normal** (no acelerarla: pierde la esencia del personaje) y con emoción; las pausas largas se recortan sin que se note (`recortar_pausas.py`). Los golpes (¡pum!, ¡pop!) caen justo en su palabra y si queda un respiro corto (cambio de emoción) lo cubre un efecto que coincide con la escena, nunca silencio. Primero la voz (aprobada por el usuario), después la animación.
+10. **Caras por emoción cambiando la textura** de la cabeza (`caras_textura.py`), nunca con planos encima: cada personaje cambia de cara según lo que pasa en cada toma. **Excepciones**: personajes con cara de máscara, dinámica o dibujada (ej. Crista "la payasita", Raul y Ajolota del mantenedor; el personaje de Yuyo con su máscara gigante): su cara no se toca, salvo que su dueño lo pida; sus emociones se cuentan con poses, efectos y sonido.
+11. **Renders en paralelo**: preguntar al usuario si quiere 2 Blender a la vez (`render_paralelo.py`): ≈ 1,6× más rápido en una sola tarjeta, pero usa más memoria de video.
+12. **Efectos de sonido que coinciden con la escena**: cada golpe en el momento exacto de la acción (`"palabra:pum"` en `armar_video.py`), pocos y siempre debajo de la voz.
 
 ## 8. Actualizar el kit sin borrar nada del usuario
 

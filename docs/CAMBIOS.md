@@ -3,6 +3,25 @@
 > Una entrada por cada actualización que se sube al repositorio (lo más nuevo arriba).
 > Si una actualización renombra o mueve archivos compartidos, avisarlo aquí.
 
+## v0.4.0 — 2026-11-06 — La voz manda el ritmo
+**Reglas nuevas para Shorts** (CLAUDE.md, reglas de oro 9–12; skill `nuevo-episodio` actualizada):
+- **Cada escena lleva voz** (no quedan partes calladas): el video dura lo que la voz, aunque el guion sea corto. Una línea de `narracion.txt` = una toma (1,5–2,5 s, corte en cada idea).
+- **Voz primero**, con la voz de cada quien (su ElevenLabs o una voz ya hecha), a **velocidad normal** y con emoción. El usuario la escucha y la aprueba antes de animar.
+- **Recortar pausas sin que se note**: `Herramientas/audio/recortar_pausas.py` (también para voces propias, con Whisper).
+- **Las tomas salen de la voz**: `Herramientas/audio/tomas_desde_voz.py` → `audio/tomas_voz.json` (los golpes ¡pum!/¡pop! caen en su palabra).
+- **Efectos que coinciden con la escena** (nueva plantilla `Herramientas/audio/armar_video.py`: voz de corrido, `"palabra:pum"`, subtítulos automáticos de 1–2 palabras).
+- **Caras por emoción cambiando la textura** de la cabeza (`Herramientas/blender/caras_textura.py` + `Herramientas/armar_secuencia_caras.py` para armar tus caras), nunca planos encima. Excepciones: caras de máscara, dinámicas o dibujadas (se anotan en `MI_CANAL.md`).
+- **Render en paralelo** (`Herramientas/render_paralelo.py`): 2 Blender a la vez ≈ 1,6× más rápido. Claude pregunta antes.
+
+**Herramientas y guías nuevas**
+- **Rig automático** (`armar_rig_r15_auto.py`): centra, voltea, reconoce las 15 piezas R15 y pega accesorios; arregla cabezas dinámicas sin cara. La skill `poner-rig` ya lo usa.
+- **Interiores para el Pueblo** (scripts en `Escenarios/Pueblo/scripts/`: `interiores.py`, `presidencia_interior.py`, `util_interiores.py`): 2 casas anchas con sala, comedor, cocina, escalera y cuartos; presidencia con vestíbulo, despacho del alcalde, cabildo, secretaría y torre del reloj. Se aplican sobre una **copia** del mapa (ver `docs/04_ESCENARIOS.md`).
+- `objetos_cartoon.py` (burbujas de pensamiento, humo "¡pop!", nube que llueve, pan, elefante, sombrero, escoba, gato con cabeza que voltea, paraguas, linterna, cuaderno, monstruo desde un personaje) y `fotos_escenario.py`.
+- Revisión: `hoja_contacto.py` + `componer_hoja.py` (hoja con todas las tomas) y `revisar_camaras.py` con varios personajes por toma (propiedad `sujeto`) y por tramos.
+- `voz_elevenlabs.py --voz ID`: probar otra voz sin cambiar la del canal.
+- Guía `docs/08_HISTORIAS.md`: historias con misterio, giro que no se adivine y narración con voz en cada escena.
+- La plantilla vieja de `armar_video.py` (voz acomodada frase por frase) queda solo en EP001.
+
 ## v0.3.1 — 2026-11-06 — Segundo entrenamiento
 - **ClusterK y Gelo con 5 videos cada uno** (confiabilidad media). Fórmulas, notas y `COMPARACION.md` actualizadas.
 - ClusterK: tipos de giro (narrador engañado con montaje de pistas, golpe final), retos por rondas con cameo famoso, finales abiertos para parte 2.

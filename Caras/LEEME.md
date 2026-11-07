@@ -1,17 +1,19 @@
 # Aquí van las caras (expresiones)
 
-PNG con **fondo transparente**, cuadrados, nombrados por emoción (minúsculas, sin acentos ni espacios):
+Las caras **se cambian en la textura de la cabeza** (nunca con planos encima) y van cambiando con la emoción de cada toma.
 
 ```
 Caras/
-├── neutral.png      ├── triste.png
-├── feliz.png        ├── asombro.png
-├── risa.png         ├── miedo.png
-├── enojado.png      ├── pensativo.png
-├── guino.png        └── ...
-└── Paquete_<Nombre>/   ← paquetes completos de caras (Claude busca ahí si falta una emoción)
+├── Emociones/                 ← tus caras: PNG con fondo transparente, una emoción por archivo
+│   ├── Sad.png, Shocked.png, ...
+│   ├── nombres.json           ← (opcional) {"Sad.png": "triste", ...}
+│   └── _secuencia/            ← la arma la herramienta (cara_0001.png ... + caras.json con el número de cada cara)
+└── Paquete_<Nombre>/          ← paquetes completos de caras (de ahí eliges cuáles pasar a Emociones/)
 ```
 
-- **Cara propia de un personaje**: si alguien tiene caras distintas, ponlas en su carpeta: `Personajes/<nivel>/<Nombre>/caras/feliz.png`. Esas tienen prioridad.
-- Claude coloca la cara al frente de la cabeza (pegada al hueso `Head`) y la cambia por fotograma según la emoción del guion. Ver `docs/03_PERSONAJES.md` → Caras.
+1. Pon tus PNG en `Caras/Emociones/`.
+2. Corre `py Herramientas/armar_secuencia_caras.py` (con `--sonrisa <textura del personaje.png>` agrega su cara de siempre al final).
+3. Claude prepara a cada personaje con `Herramientas/blender/caras_textura.py` y elige el número de cara en cada toma.
+
+- **Excepciones**: personajes con cara de máscara, dinámica o dibujada no se cambian (se anotan en tu `MI_CANAL.md`); sus emociones se muestran con poses, efectos y sonido.
 - Las caras de Roblox tienen licencia: no se suben al repositorio (git ignora esta carpeta salvo este LEEME).

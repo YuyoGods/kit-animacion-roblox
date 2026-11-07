@@ -24,5 +24,18 @@ Escala: 1 unidad ≈ 1 stud de Roblox (personaje ≈ 4,5–5,6). Norte = **+Y**.
 - **Cortinas** de cada casa/tienda: propiedad `cortinas` del objeto (0 abiertas, 1 cerradas).
 - **Reloj** de la presidencia (rotación Y de las manecillas).
 
+## Pueblo_v2 — interiores (en prueba, `Escenarios/Pueblo_v2/`)
+Se construye sobre una copia del Pueblo con `Escenarios/Pueblo/scripts/interiores.py` y `presidencia_interior.py` (piezas comunes en `util_interiores.py`).
+| Lugar | Dónde | Notas |
+|---|---|---|
+| Casa de Sikelpa y Ajolota | `CasaAncha_02` (29,5, 286), mira a la calle (−x) | Ancha y **alargada hacia atrás** (fachada igual). Interior 19,2 × 16,7: sala con tele, comedor, cocina con barra, escalera; arriba el cuarto de los hermanos (2 camas) |
+| Casa de Lila | `CasaAncha_01` (−29,5, 286), frente a la de Sikelpa | Igual de grande; tonos morado/verde agua; cuarto con tocador y librero de "pociones" |
+| Presidencia PB | vestíbulo z 1,5 | Piso de ajedrez, alfombra roja, escalera central (y 474–486), retratos, banderas, INFORMES, maqueta del pueblo, candil |
+| Presidencia 2.º piso | z 10,8 | **Despacho del alcalde = ala derecha completa** (x 12–27, y 467–489); cabildo en el ala izquierda; secretaría al frente |
+| Torre del reloj | z 22 | Engranes (`Pres_Engrane*`, girar en Y local), péndulo (`Pres_Pendulo`), campana; se ve la carátula por detrás |
+- Puertas: girar en Z `CasaAncha_0X_PuertaBisagra` y `Pres_PuertaIzq/Der_Bisagra` (≈1,6 rad = abierta).
+- Coordenadas de las casas: **locales** de su vacío (frente hacia −Y; planta baja z 1,0; 2.º piso z 9,4).
+- Fotos de revisión de cualquier escenario: `Herramientas/blender/fotos_escenario.py` (cámaras temporales, también de noche).
+
 ## Cómo agregar un escenario nuevo
 Crear `Escenarios/<Nombre>/` con `scripts/` (construcción repetible) y guardar un `<Nombre>_set.blend` limpio. Documentar aquí su mapa.

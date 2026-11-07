@@ -1,7 +1,9 @@
 # Genera la narracion con ElevenLabs (con tiempos por letra para sincronizar subtitulos).
-# Uso: py voz_elevenlabs.py EP###_Nombre [archivo.txt]
+# Uso: py voz_elevenlabs.py EP###_Nombre [archivo.txt] [--voz ID_DE_VOZ] [--velocidad 1.06]
 #   Lee el texto de EP###/narracion.txt (lineas con # se ignoran) y guarda en EP###/audio/:
 #   narracion.mp3 + narracion_tiempos.json
+#   --voz: probar otra voz sin cambiar "voz_narrador" de mi_config.json.
+#   --velocidad: 0.7 a 1.2 (1.0 normal); 1.05-1.08 = ritmo de Shorts sin que suene acelerado.
 # GASTA CREDITOS de ElevenLabs: confirmar con el usuario antes de correrlo.
 # La clave se lee de la variable de entorno ELEVENLABS_API_KEY de Windows; nunca se imprime ni se guarda.
 import base64, json, os, sys, urllib.error, urllib.request
@@ -19,16 +21,27 @@ def _raiz():
 sys.path.insert(0, os.path.join(_raiz(), "Herramientas"))
 from config import VOZ_NARRADOR, MODELO_VOZ, episodio  # noqa: E402
 
-if len(sys.argv) < 2:
-    sys.exit("Uso: py voz_elevenlabs.py EP###_Nombre [archivo.txt]")
-EP = episodio(sys.argv[1])
-TXT = sys.argv[2] if len(sys.argv) > 2 else os.path.join(EP, "narracion.txt")
+_args = list(sys.argv[1:])
+VOZ_ELEGIDA = None
+VELOCIDAD = None
+if "--velocidad" in _args:
+    i = _args.index("--velocidad")
+    VELOCIDAD = float(_args[i + 1])
+    del _args[i:i + 2]
+if "--voz" in _args:
+    i = _args.index("--voz")
+    VOZ_ELEGIDA = _args[i + 1] if i + 1 < len(_args) else None
+    del _args[i:i + 2]
+if not _args:
+    sys.exit("Uso: py voz_elevenlabs.py EP###_Nombre [archivo.txt] [--voz ID_DE_VOZ]")
+EP = episodio(_args[0])
+TXT = _args[1] if len(_args) > 1 else os.path.join(EP, "narracion.txt")
 if not os.path.exists(TXT):
     sys.exit("No existe el texto: " + TXT)
 TEXT = " ".join(l.strip() for l in open(TXT, encoding="utf-8") if l.strip() and not l.lstrip().startswith("#"))
 if not TEXT:
     sys.exit("El texto esta vacio: " + TXT)
-VOICE = VOZ_NARRADOR
+VOICE = VOZ_ELEGIDA or VOZ_NARRADOR
 if not VOICE:
     sys.exit("Falta \"voz_narrador\" (id de la voz) en mi_config.json")
 OUT = os.path.join(EP, "audio")
@@ -54,6 +67,8 @@ body = {
     "model_id": MODELO_VOZ,
     "voice_settings": {"stability": 0.4, "similarity_boost": 0.75, "style": 0.3, "use_speaker_boost": True},
 }
+if VELOCIDAD:
+    body["voice_settings"]["speed"] = max(0.7, min(1.2, VELOCIDAD))
 url = "https://api.elevenlabs.io/v1/text-to-speech/%s/with-timestamps?output_format=mp3_44100_128" % VOICE
 req = urllib.request.Request(url, data=json.dumps(body).encode("utf-8"),
                              headers={"xi-api-key": api_key(), "Content-Type": "application/json", "Accept": "application/json"})

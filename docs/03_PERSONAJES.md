@@ -9,13 +9,18 @@ Hacerlo directo, sin explicaciones largas (ya está probado con Crista). Pasos:
    - 15 piezas R15: la cabeza es la más alta; torso superior/inferior por altura; brazos a los lados (mano = la pieza más baja del brazo); piernas abajo (pie = la más baja).
    - *Right* = lado derecho del personaje = **−X** cuando mira a −Y.
    - Lo demás son **accesorios** → hueso más cercano: cabello/sombrero → `Head`; mochila/cuello/capa → `UpperTorso`; falda/cinturón → `LowerTorso`.
-3. Copiar `Herramientas/blender/armar_rig_r15_plantilla.py` como `build_<nombre>_rig.py` en la carpeta del personaje; cambiar `Crista` por el nombre y llenar `PARTS` y `ACC`.
-4. Ejecutar: `blender.exe -b --factory-startup --python build_<nombre>_rig.py` (≈1 min) → `<Nombre>_R15_Rig.blend` + `previews/` (frente, lado, espalda, pose de prueba).
+3. **Automático (recomendado)**: `blender.exe -b --factory-startup --python Herramientas/blender/armar_rig_r15_auto.py -- "<carpeta del personaje>" <Nombre>` (≈5 s). Importa todos los `.obj` de la carpeta (y su subcarpeta de accesorios), **centra** el modelo, lo **voltea** si mira a +Y, reconoce las 15 piezas por posición y pega los accesorios (arriba del centro de la cabeza → `Head`; arriba de la cadera → `UpperTorso`; abajo → `LowerTorso`). Revisar en la salida el mapa que imprime.
+   - Manual (si el automático falla): copiar `armar_rig_r15_plantilla.py` como `build_<nombre>_rig.py`, cambiar `Crista` por el nombre y llenar `PARTS` y `ACC`.
+4. Resultado: `<Nombre>_R15_Rig.blend` + `previews/` (frente, lado, espalda, pose de prueba).
 5. **Revisar las fotos** (piezas en su lugar, nada flotando ni separado al doblar; materiales con la salida conectada, ver lección de caras negras). Corregir y repetir si hace falta.
 6. **No borrar** lo que subió el usuario. Si ya existía un `<Nombre>_R15_Rig.blend`, moverlo a `Respaldos/<Nombre>_rig_<fecha>.blend` antes de crear el nuevo.
 7. Anotar en `MI_CANAL.md` (reparto: estado "rig listo", altura, rig) y responder corto: *"Listo: <Nombre> ya tiene rig → `<ruta>`"* + una foto de `previews/`.
 
 ## Caras (expresiones)
+- **Método recomendado (cabeza clásica, ej. Lila y Coco): cara en la textura**, sin planos encima. `Herramientas/blender/caras_textura.py` le da a la cabeza un material propio: piel + la cara elegida, pintada de frente sobre toda la cara de la cabeza (tamaño aprobado por el usuario; `zona="frente"` la hace más chica), y borra la cara de fábrica. La sonrisa de siempre (15) está reducida a su tamaño original. La cara se elige con la propiedad **`cara`** del rig (número de `Caras/Emociones/_secuencia/caras.json`: 1 molesto · 2 sorpresa · 3 pícaro · 4 confundido · 5 risa · 6 triste · 7 asustado · 8 muy feliz · 9 nervioso · 10 preocupado · 11 incrédulo · 12 bostezo · 13 indignado · 14 asombro · 15 sonrisa de siempre) y se anima con keyframes (cambio seco: valor viejo en f−1, nuevo en f).
+- Para agregar emociones: poner el PNG (fondo transparente) en `Caras/Emociones/` y regenerar la secuencia (`cara_####.png`, 1024 px) con su número en `caras.json`.
+- **Excepciones (no se cambia la cara)**: cabezas con cara de máscara, dinámicas o dibujadas (ej. Crista "la payasita", Raul y Ajolota del mantenedor; el personaje de Yuyo con máscara gigante). Se respetan tal cual, salvo que su dueño pida cambiarlas; sus emociones se cuentan con poses, efectos (burbujas, gotas de sudor, nubes, destellos) y sonido. Anotar en `MI_CANAL.md` qué personajes son excepción.
+- Cada personaje que sí cambia: elegir su cara en **cada toma** según la emoción del momento (tabla `CARAS` en el script de animación) y regresar a su cara de siempre cuando pasa la emoción.
 - Origen: `Personajes/<nivel>/<Nombre>/caras/` (prioridad) o `Caras/` (`feliz.png`, `enojado.png`, `asombro.png`…; paquetes en `Caras/Paquete_*`).
 - Método (como Sikelpa): un plano por expresión al frente de la cabeza, emparentado al hueso `Head`, material con transparencia; se cambia la cara con keyframes de visibilidad (`hide_render` + `hide_viewport`) en el fotograma de la emoción.
 - Si la cara viene pintada en la textura del cuerpo (Crista), es fija: para hacerla intercambiable hay que tapar la cara de la textura y usar los planos.
@@ -76,7 +81,12 @@ Las piezas del cuerpo y los accesorios están **emparentadas al hueso** (rígida
 Bajada de cadera para que el pie no flote: `−L·(1 − cos(A·sin(fase)))`, con L = largo de pierna (Crista 1,67).
 Pisadas (para sonido): cuando la fase cruza `π/2 + k·π`.
 
-## Poses guardadas (Crista, en grados)
+## Poses guardadas (en grados)
+- **Sentado en el sillón** (Coco/Lila, EP002): UpperLeg X 86 · LowerLeg X −70 · Foot X −10 · UpperTorso X −5; HRP z = (asiento + 0,45) − (piso + altura de cadera). Manos en los muslos: UpperArm (16,0,±8) · LowerArm 58.
+- **Acostado → se sienta en la cama**: HRP X de −90 a 0 mientras UpperLeg X va de 0 a 90 (las piernas no se mueven); origen del rig = cobija + 0,62 − altura del HRP.
+- **Manos en las sienes / mano en la barbilla / secreto al oído**: calcularlas con `resolver_mano` (ver `Episodios/EP002_Lo_Que_Piensas/scripts/animar_bloque1.py`).
+
+### Crista
 - **Amarrarse la agujeta** (rodilla izquierda al piso, pie derecho adelante): HRP z −0,76 · RightUpperLeg (86,0,4) · RightLowerLeg −86 · RightFoot 13 · LeftUpperLeg (−12,0,−3) · LeftLowerLeg −78 · UpperTorso 34 · Head 30 · RightUpperArm (35,0,35) · RightLowerArm 10 · LeftUpperArm (30,0,−60) · LeftLowerArm 10. Movimiento de amarrar: ±12° antebrazos y ±15° manos a 2,3 Hz, alternados.
 - **Tocar la puerta** (brazo derecho): RightUpperArm (82,0,12) · RightLowerArm 62 − 22·golpe · RightHand −18. Golpes como pulsos gaussianos (ancho 2,2 fotogramas).
 

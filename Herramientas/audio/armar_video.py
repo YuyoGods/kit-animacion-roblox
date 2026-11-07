@@ -1,9 +1,11 @@
-# Arma el video final: voz acomodada a cada toma + efectos suaves + subtitulos cortos (1 linea).
-# Uso: py armar_video.py EP###_Nombre [preview|final]
-# Es una PLANTILLA (ejemplo de EP001): copiarla a EP###/scripts/ y editar LINES, NEW_START, efectos y CHUNKS.
-# Lee:  EP###/audio/(narracion.mp3, narracion_tiempos.json, eventos.json)
-#       EP###/renders/<modo>/fotogramas/c_0001.png ...
-# Deja: EP###/renders/<modo>/EP###_<modo>.mp4  (+ subtitulos.ass y mezcla_final.wav en audio/)
+# Arma el video: la voz completa de corrido (las tomas ya siguen a la voz, ver tomas_desde_voz.py) + pocos efectos
+# debajo de la voz, cada uno justo cuando pasa algo en la escena + subtitulos automaticos de 1-2 palabras -> MP4.
+# PLANTILLA: copiar a EP###/scripts/armar_video.py y editar AMBIENTES, EFECTOS y CLAVE para el episodio.
+# Uso: py Episodios/EP###_Titulo/scripts/armar_video.py EP###_Titulo [preview|final]
+# Lee:  audio/tomas_voz.json + la voz (audio/voz.wav si se recorto con recortar_pausas.py, si no audio/narracion.mp3)
+#       renders/<modo>/fotogramas/c_0001.png ...
+# Deja: renders/<modo>/EP###_Titulo_<modo>.mp4  (+ subtitulos.ass, mezcla_final.wav, tiempos_finales.json en audio/)
+# (La version vieja de esta plantilla, con la voz acomodada frase por frase, quedo en EP001/scripts/armar_video.py.)
 import json, os, subprocess, sys, unicodedata
 import numpy as np
 
@@ -20,9 +22,24 @@ def _raiz():
 sys.path.insert(0, os.path.join(_raiz(), "Herramientas"))
 from config import SFX, episodio  # noqa: E402
 
+# ======================= EDITAR POR EPISODIO =======================
+# Sonido de fondo en bucle, muy bajito (toma_desde, toma_hasta, categoria, numero, volumen_dB)
+AMBIENTES = [
+    # (1, 4, "wind", 2, -30),            # exterior de dia
+    # (5, 5, "night_ambience", 3, -21),  # noche
+]
+# Golpes: (cuando, categoria, numero, volumen_dB). cuando = segundos, "palabra:pum" (cae con esa palabra de la voz;
+# "palabra:pum:2" = la segunda vez que la dice) o "toma:3" (al empezar la toma 3). Pocos y con sentido.
+EFECTOS = [
+    # ("palabra:pum", "pop", 5, -3),
+    # ("toma:6", "whoosh", 2, -16),
+]
+CLAVE = set()        # palabras que van en amarillo en los subtitulos, ej. {"monstruo", "pum"}
+# ===================================================================
+
 _args = [a for a in sys.argv[1:] if a not in ("preview", "final")]
 if not _args:
-    sys.exit("Uso: py armar_video.py EP###_Nombre [preview|final]")
+    sys.exit("Uso: py armar_video.py EP###_Titulo [preview|final]")
 EP = _args[0]
 MODE = "final" if "final" in sys.argv[1:] else "preview"
 ROOT = episodio(EP)
@@ -32,16 +49,38 @@ OUT_MP4 = os.path.join(ROOT, "renders", MODE, "%s_%s.mp4" % (EP, MODE))
 if not SFX or not os.path.isdir(SFX):
     sys.exit("Falta la carpeta de efectos: poner la ruta en \"sfx\" de mi_config.json")
 SR = 48000
-EV = json.load(open(os.path.join(AUD, "eventos.json")))
-DUR = EV["frames"] / EV["fps"]
+VOZ = json.load(open(os.path.join(AUD, "tomas_voz.json"), encoding="utf-8"))
+FPS = VOZ["fps"]
+DUR = VOZ["frames"] / FPS
 N = int(DUR * SR) + SR
+TOMA = {t["n"]: ((t["f_ini"] - 1) / FPS, t["f_fin"] / FPS) for t in VOZ["tomas"]}
+
+
+def norm(w):
+    w = unicodedata.normalize("NFD", w.lower())
+    return "".join(c for c in w if c.isalnum() and unicodedata.category(c) != "Mn")
+
+
+def cuando(c):
+    if isinstance(c, (int, float)):
+        return float(c)
+    tipo, valor, *resto = c.split(":")
+    if tipo == "toma":
+        return TOMA[int(valor)][0]
+    hits = [p for p in VOZ["palabras"] if p["w"] == norm(valor)]
+    if not hits:
+        sys.exit("La voz no dice la palabra: " + valor)
+    return hits[int(resto[0]) - 1 if resto else 0]["t0"]
 
 
 def load(path):
-    """decodifica cualquier audio a float32 mono 48 kHz con ffmpeg"""
     raw = subprocess.run(["ffmpeg", "-v", "error", "-i", path, "-f", "f32le", "-ac", "1", "-ar", str(SR), "-"],
                          capture_output=True, check=True).stdout
     return np.frombuffer(raw, dtype=np.float32).copy()
+
+
+def sfx(cat, n):
+    return load(os.path.join(SFX, cat, "sfx.%s.%02d.ogg" % (cat, n)))
 
 
 def db(x):
@@ -61,114 +100,45 @@ def place(track, clip, t, gain_db=0.0, fade_in=0.0, fade_out=0.0):
     track[i:j] += c[:j - i]
 
 
-# ================= VOZ: cada frase en su toma =================
-al = json.load(open(os.path.join(AUD, "narracion_tiempos.json"), encoding="utf-8"))
-chars, st, en = al["characters"], al["character_start_times_seconds"], al["character_end_times_seconds"]
-text = "".join(chars)
-LINES = ["Esta es Crista, y hoy era el día más importante de su vida.", "El alcalde la había elegido para algo muy especial.",
-         "Pero justo antes de llegar...", "se le desató la agujeta... ¡y ya iba tarde!", "Faltaban dos minutos.",
-         "Crista corrió como nunca por todo el pueblo.", "Pasó la fuente, la plaza...", "y por fin llegó.",
-         "Subió las escaleras con el corazón a mil.", "Tocó la puerta tres veces...", "pero lo que había detrás... nadie se lo esperaba."]
-NEW_START = [0.20, 3.95, 7.10, 8.97, 12.11, 14.30, 17.45, 19.80, 22.30, 25.05, 26.95]
-voz_src = load(os.path.join(AUD, "narracion.mp3"))
+# ================= VOZ: completa y de corrido =================
 voz = np.zeros(N, np.float32)
-spans, pos = [], 0
-for l in LINES:
-    a = text.find(l[:12], pos); b = a + len(l) - 1; pos = b
-    spans.append((a, b))
-offsets = []
-for k, (a, b) in enumerate(spans):
-    t0, t1 = st[a], en[b]
-    nxt = st[spans[k + 1][0]] if k + 1 < len(spans) else t1 + 0.4
-    s0, s1 = max(0.0, t0 - 0.04), min(nxt - 0.02, t1 + 0.18)
-    seg = voz_src[int(s0 * SR):int(s1 * SR)].copy()
-    place(voz, seg, NEW_START[k] - (t0 - s0), 0.0, fade_in=0.01, fade_out=0.04)
-    offsets.append(NEW_START[k] - t0)
+archivo_voz = os.path.join(AUD, VOZ.get("audio", "narracion.mp3"))
+place(voz, load(archivo_voz), VOZ["voz_inicio"], 0.0, fade_in=0.005, fade_out=0.05)
 
-# ================= EFECTOS (pocos, con sentido) =================
+# ================= EFECTOS =================
 fx = np.zeros(N, np.float32)
-amb = load(os.path.join(SFX, "wind", "sfx.wind.02.ogg"))
-amb = np.tile(amb, int(np.ceil(N / len(amb))))[:N]
-fx += amb * db(-27)                                              # ambiente: viento suave de pueblo
-steps = [load(os.path.join(SFX, "footstep", "sfx.footstep.0%d.ogg" % i)) for i in (7, 8, 9)]
-for i, p in enumerate(EV["pasos"]):                              # pasos sincronizados con cada pisada
-    place(fx, steps[i % 3], p["t"], -17 if p["tipo"] == "correr" else -21)
-place(fx, load(os.path.join(SFX, "swish", "sfx.swish.02.ogg")), EV["agacharse"] + 0.1, -16)          # ropa al agacharse
-place(fx, load(os.path.join(SFX, "reverse_swell", "sfx.reverse_swell.02.ogg")), EV["corte_poste"] - 0.84, -11)
-place(fx, load(os.path.join(SFX, "swish", "sfx.swish.06.ogg")), EV["corte_poste"] - 0.05, -6)          # whoosh del poste
-gav = [load(os.path.join(SFX, "gavel", "sfx.gavel.0%d.ogg" % i)) for i in (1, 2, 3)]
-for i, t in enumerate(EV["golpes"]):                             # tres toques en la puerta
-    place(fx, gav[i], t, -7)
-drone = load(os.path.join(SFX, "tension_drone", "sfx.tension_drone.02.ogg"))
-place(fx, drone[:int(4.2 * SR)], 26.6, -22, fade_in=1.5, fade_out=0.6)   # tension del final
-place(fx, load(os.path.join(SFX, "sub_drop", "sfx.sub_drop.01.ogg")), 29.35, -14, fade_out=0.8)
+for t0, t1, cat, n, g in AMBIENTES:
+    a, b = TOMA[t0][0], TOMA[t1][1]
+    c = sfx(cat, n); m = int((b - a) * SR)
+    place(fx, np.tile(c, int(np.ceil(m / len(c))) + 1)[:m].copy(), a, g, fade_in=0.2, fade_out=0.2)
+for c, cat, n, g in EFECTOS:
+    place(fx, sfx(cat, n), cuando(c), g, fade_out=0.05)
 
 # ================= MEZCLA =================
-mix = voz * db(-1.0) + fx
-# bajar efectos cuando habla la voz (ducking suave)
 env = np.convolve(np.abs(voz), np.ones(2400) / 2400, mode="same")
-duck = np.clip(1.0 - env * 6.0, 0.55, 1.0)
-mix = voz * db(-1.0) + fx * duck
-mix = mix[:int(DUR * SR)]
-peak = np.max(np.abs(mix)) or 1
-mix = mix / peak * 0.89
+duck = np.clip(1.0 - env * 6.0, 0.55, 1.0)                 # bajar efectos cuando habla la voz
+mix = (voz * db(-1.0) + fx * duck)[:int(DUR * SR)]
+mix = mix / (np.max(np.abs(mix)) or 1) * 0.89
 tmp = os.path.join(AUD, "mezcla_tmp.wav")
 subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "f32le", "-ar", str(SR), "-ac", "1", "-i", "-", tmp], input=mix.astype(np.float32).tobytes(), check=True)
 final_wav = os.path.join(AUD, "mezcla_final.wav")
 subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", tmp, "-af", "loudnorm=I=-14:TP=-1.5:LRA=11", "-ar", str(SR), "-ac", "2", final_wav], check=True)
 os.remove(tmp)
 
-# ================= SUBTITULOS (1 a 3 palabras, 1 linea) =================
-CHUNKS = ["Esta es Crista", "y hoy era", "el día más", "importante", "de su vida",
-          "El alcalde", "la había elegido", "para algo", "muy especial",
-          "Pero justo", "antes de llegar",
-          "se le desató", "la agujeta", "¡y ya", "iba tarde!",
-          "Faltaban", "dos minutos",
-          "Crista corrió", "como nunca", "por todo", "el pueblo",
-          "Pasó la fuente", "la plaza",
-          "y por fin", "llegó",
-          "Subió", "las escaleras", "con el corazón", "a mil",
-          "Tocó la puerta", "tres veces",
-          "pero lo que", "había detrás", "nadie se lo", "esperaba"]
-HILITE = {"crista", "importante", "alcalde", "agujeta", "tarde", "minutos", "corrió", "llegó", "escaleras", "puerta", "esperaba", "especial"}
-
-
-def norm(w):
-    w = unicodedata.normalize("NFD", w.lower())
-    return "".join(c for c in w if c.isalnum() and unicodedata.category(c) != "Mn")
-
-
-# palabras con su tiempo (ya movido a su toma)
-words = []
-i = 0
-line_of = []
-for k, (a, b) in enumerate(spans):
-    for idx in range(a, b + 1):
-        line_of.append((idx, k))
-lk = dict(line_of)
-while i < len(text):
-    if text[i].isspace():
-        i += 1; continue
-    j = i
-    while j < len(text) and not text[j].isspace():
-        j += 1
-    w = text[i:j]
-    if norm(w) and i in lk:
-        off = offsets[lk[i]]
-        words.append((norm(w), st[i] + off, en[j - 1] + off))
-    i = j
-events = []
-wi = 0
-for c in CHUNKS:
-    ws = [norm(x) for x in c.split() if norm(x)]
-    t0 = words[wi][1]; t1 = words[wi + len(ws) - 1][2]
-    assert [w[0] for w in words[wi:wi + len(ws)]] == ws, (c, words[wi:wi + len(ws)])
-    events.append([t0 - 0.03, t1, c])
-    wi += len(ws)
+# ================= SUBTITULOS automaticos (1-2 palabras, 1 linea) =================
+trozos, actual = [], []
+for p in VOZ["palabras"]:
+    actual.append(p)
+    corta = p["texto"][-1] in ",.:;!?\"»…" or p["texto"].endswith("...")
+    if corta or len(actual) == 2 or (p["t1"] - actual[0]["t0"]) > 0.65:
+        trozos.append(actual); actual = []
+if actual:
+    trozos.append(actual)
+events = [[tz[0]["t0"] - 0.03, tz[-1]["t1"], " ".join(p["texto"] for p in tz)] for tz in trozos]
 for k in range(len(events)):
     nxt = events[k + 1][0] if k + 1 < len(events) else DUR
-    events[k][1] = min(nxt, max(events[k][1] + 0.3, events[k][1]))
-    if nxt - events[k][1] < 0.35:
+    events[k][1] = min(nxt, events[k][1] + 0.25)
+    if nxt - events[k][1] < 0.3:
         events[k][1] = nxt
 
 
@@ -178,31 +148,24 @@ def ts(t):
 
 
 def styled(c):
-    out = []
-    for w in c.split():
-        clean = w.strip("¡!.,")
-        if norm(clean) in HILITE:
-            out.append("{\\c&H2AD8FF&}" + w + "{\\c&HFFFFFF&}")
-        else:
-            out.append(w)
-    return " ".join(out)
+    return " ".join("{\\c&H2AD8FF&}" + w + "{\\c&HFFFFFF&}" if norm(w) in CLAVE else w for w in c.split())
 
 
 ass = ["[Script Info]", "ScriptType: v4.00+", "PlayResX: 1080", "PlayResY: 1920", "WrapStyle: 2", "",
        "[V4+ Styles]",
        "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding",
-       "Style: Sub,Arial Black,92,&H00FFFFFF,&H00FFFFFF,&H00000000,&H64000000,-1,0,0,0,100,100,0,0,1,8,3,2,50,50,400,1",
+       "Style: Sub,Arial Black,96,&H00FFFFFF,&H00FFFFFF,&H00000000,&H64000000,-1,0,0,0,100,100,0,0,1,8,3,2,50,50,420,1",
        "", "[Events]", "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text"]
 for t0, t1, c in events:
     ass.append("Dialogue: 0,%s,%s,Sub,,0,0,0,,{\\fscx118\\fscy118\\t(0,90,\\fscx100\\fscy100)}%s" % (ts(t0), ts(t1), styled(c)))
 open(os.path.join(AUD, "subtitulos.ass"), "w", encoding="utf-8").write("\n".join(ass) + "\n")
-json.dump({"voz_inicio_frases": NEW_START, "subtitulos": events}, open(os.path.join(AUD, "tiempos_finales.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+json.dump({"subtitulos": events}, open(os.path.join(AUD, "tiempos_finales.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
 
 # ================= VIDEO =================
 os.chdir(AUD)          # ruta corta para el filtro de subtitulos
-cmd = ["ffmpeg", "-v", "error", "-y", "-framerate", str(EV["fps"]), "-i", os.path.join(FRAMES, "c_%04d.png"),
+cmd = ["ffmpeg", "-v", "error", "-y", "-framerate", str(FPS), "-i", os.path.join(FRAMES, "c_%04d.png"),
        "-i", final_wav, "-vf", "scale=1080:1920:flags=lanczos,subtitles=subtitulos.ass",
-       "-c:v", "libx264", "-preset", "slow", "-crf", "17", "-pix_fmt", "yuv420p", "-r", str(EV["fps"]),
+       "-c:v", "libx264", "-preset", "slow", "-crf", "17", "-pix_fmt", "yuv420p", "-r", str(FPS),
        "-c:a", "aac", "-b:a", "256k", "-shortest", "-movflags", "+faststart", OUT_MP4]
 subprocess.run(cmd, check=True)
-print("listo ->", OUT_MP4, "| duracion", round(DUR, 2), "s | subtitulos:", len(events), "| pasos:", len(EV["pasos"]))
+print("listo ->", OUT_MP4, "| duracion %.2f s | %d subtitulos" % (DUR, len(events)))

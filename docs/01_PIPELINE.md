@@ -10,8 +10,9 @@ Marcar cada paso. No saltar la **revisión de cámaras** (paso 6).
 
 ## 1. Guion y tomas
 - [ ] Historia corta estilo "historias de Roblox": gancho en los primeros 3 s → problema → acción → final con suspenso.
-- [ ] Narración ≈ 2,5 palabras/s (30 s ≈ 70–80 palabras). Frases cortas, una por toma.
-- [ ] Tabla de tomas: número, tipo (dron/frontal/lateral/giro/pegada/plano detalle), duración (2–4 s), acción, frase.
+- [ ] **La voz manda el ritmo** (pedido del usuario, EP002): **cada escena lleva voz** (no quedan partes calladas; el video dura lo que la voz, aunque sea corto), frases cortas y concretas ("no pienses en un elefante rosa, porque… ¡pop!"). En `narracion.txt` **una línea = una toma** (tomas de ~1,5–2,5 s, corte en cada idea).
+- [ ] Orden nuevo: texto aprobado → **voz primero** a velocidad normal, con la voz de cada quien (`voz_elevenlabs.py EP###`, confirmar créditos; o una voz ya hecha) → **el usuario la escucha y la aprueba** → `py Herramientas/audio/recortar_pausas.py EP### [--audio su_voz.mp3]` (quita silencios largos sin que se note) → `py Herramientas/audio/tomas_desde_voz.py EP###` (tomas y fotograma de cada palabra en `audio/tomas_voz.json`) → animar leyendo ese archivo (los golpes caen en su palabra).
+- [ ] Tabla de tomas: número, tipo (dron/frontal/lateral/giro/pegada/plano detalle), acción y su línea de voz (la duración sale de la voz).
 - [ ] El usuario aprueba el guion **antes** de animar.
 
 ## 2. Personajes
