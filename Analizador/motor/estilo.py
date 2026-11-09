@@ -25,9 +25,18 @@ def _top(items):
     return c.most_common(1)[0][0] if c else None
 
 
+# Nombres viejos de un mismo creador: sus resultados se juntan con los del nombre actual.
+# "ClusterK" se escribio por error; el canal es Custerk (@CusterkBloxy). Los informes viejos se quedan en su carpeta.
+ALIAS = {"Custerk": ["ClusterK"]}
+ES_ALIAS = {v for vs in ALIAS.values() for v in vs}
+
+
 def cargar(creador):
     vids = []
-    for f in sorted(glob.glob(os.path.join(RESULTADOS, creador, "*", "datos.json"))):
+    rutas = []
+    for c in [creador] + ALIAS.get(creador, []):
+        rutas += glob.glob(os.path.join(RESULTADOS, c, "*", "datos.json"))
+    for f in sorted(rutas):
         d = leer_json(f)
         if d and d.get("version") == VERSION:
             d["_carpeta"] = os.path.dirname(f)
@@ -187,6 +196,8 @@ def comparar():
              ("Música probable %", lambda F: F["audio"]["musica_probable_pct"]), ("Giros por minuto", lambda F: F["historia"]["giros_por_minuto"]),
              ("Termina en pregunta %", lambda F: F["historia"]["termina_en_pregunta_pct"]), ("Confiabilidad", lambda F: F["confiabilidad"])]
     # COMPARACION.md (se comparte) solo con creadores; Nosotros_comparacion.md (personal) agrega nuestro estilo
+    nombres = {F["creador"] for F in Fs}
+    Fs = [F for F in Fs if not (F["creador"] in ES_ALIAS and any(F["creador"] in ALIAS.get(n, []) for n in nombres))]
     creadores = [F for F in Fs if F["creador"] != "Nosotros"]
     if creadores:
         _tabla("COMPARACION.md", creadores, filas)

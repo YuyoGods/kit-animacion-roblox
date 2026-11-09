@@ -6,7 +6,7 @@
 #       renders/<modo>/fotogramas/c_0001.png ...
 # Deja: renders/<modo>/EP###_Titulo_<modo>.mp4  (+ subtitulos.ass, mezcla_final.wav, tiempos_finales.json en audio/)
 # (La version vieja de esta plantilla, con la voz acomodada frase por frase, quedo en EP001/scripts/armar_video.py.)
-import json, os, subprocess, sys, unicodedata
+import re, json, os, subprocess, sys, unicodedata
 import numpy as np
 
 
@@ -35,6 +35,8 @@ EFECTOS = [
     # ("toma:6", "whoosh", 2, -16),
 ]
 CLAVE = set()        # palabras que van en amarillo en los subtitulos, ej. {"monstruo", "pum"}
+CALLAR = set()       # palabras que la voz dice pero que mejor hace el EFECTO (onomatopeyas que ElevenLabs lee
+                     # en ingles, ej. {"dong"}): se silencian en la voz y no salen en subtitulos
 # ===================================================================
 
 _args = [a for a in sys.argv[1:] if a not in ("preview", "final")]
@@ -104,6 +106,11 @@ def place(track, clip, t, gain_db=0.0, fade_in=0.0, fade_out=0.0):
 voz = np.zeros(N, np.float32)
 archivo_voz = os.path.join(AUD, VOZ.get("audio", "narracion.mp3"))
 place(voz, load(archivo_voz), VOZ["voz_inicio"], 0.0, fade_in=0.005, fade_out=0.05)
+for p in VOZ["palabras"]:                                  # CALLAR: quitar esa palabra de la voz (el efecto la "dice")
+    if p["w"] in CALLAR:
+        i0, i1 = int((p["t0"] - 0.02) * SR), int((p["t1"] + 0.06) * SR)
+        r = min(240, (i1 - i0) // 4)
+        voz[i0:i0 + r] *= np.linspace(1, 0, r); voz[i0 + r:i1 - r] = 0; voz[i1 - r:i1] *= np.linspace(0, 1, r)
 
 # ================= EFECTOS =================
 fx = np.zeros(N, np.float32)
@@ -128,13 +135,19 @@ os.remove(tmp)
 # ================= SUBTITULOS automaticos (1-2 palabras, 1 linea) =================
 trozos, actual = [], []
 for p in VOZ["palabras"]:
+    if p["w"] in CALLAR:
+        continue
     actual.append(p)
     corta = p["texto"][-1] in ",.:;!?\"»…" or p["texto"].endswith("...")
     if corta or len(actual) == 2 or (p["t1"] - actual[0]["t0"]) > 0.65:
         trozos.append(actual); actual = []
 if actual:
     trozos.append(actual)
-events = [[tz[0]["t0"] - 0.03, tz[-1]["t1"], " ".join(p["texto"] for p in tz)] for tz in trozos]
+def limpio(w):
+    """palabra sin comillas ni signos (. , ! ¡ ? ¿ : ; …): los subtitulos van limpios"""
+    return re.sub(r"[^\w]", "", w)
+
+events = [[tz[0]["t0"] - 0.03, tz[-1]["t1"], " ".join(x for x in (limpio(p["texto"]) for p in tz) if x)] for tz in trozos]
 for k in range(len(events)):
     nxt = events[k + 1][0] if k + 1 < len(events) else DUR
     events[k][1] = min(nxt, events[k][1] + 0.25)

@@ -1,0 +1,156 @@
+{
+ "creador": "Custerk",
+ "videos": 76,
+ "minutos": 155.7,
+ "confiabilidad": "alta (15+ videos)",
+ "video": {
+  "duracion_s": 124.47,
+  "duracion_p10_s": 96.11,
+  "duracion_p90_s": 152.2,
+  "vertical_pct": 100
+ },
+ "ritmo": {
+  "toma_mediana_s": 1.4,
+  "toma_p10_s": 0.63,
+  "toma_p90_s": 2.7,
+  "toma_media_s": 1.57,
+  "cortes_por_minuto": 37.4,
+  "toma_mediana_por_tercio_s": [
+   1.47,
+   1.39,
+   1.57
+  ],
+  "cortes_en_primeros_3s": 1.0,
+  "cortes_en_palabra_pct": 100.0
+ },
+ "planos_pct": {
+  "plano medio": 37,
+  "plano entero": 20,
+  "plano general": 17,
+  "primer plano": 12,
+  "primerísimo primer plano": 7,
+  "texto en pantalla": 5,
+  "plano general (sin personaje)": 2,
+  "negro": 0,
+  "plano aéreo": 0
+ },
+ "camara_pct": {
+  "fija": 46,
+  "acercamiento lento": 41,
+  "alejamiento lento": 8,
+  "golpe de zoom": 3,
+  "giro de cámara": 1,
+  "paneo vertical": 0,
+  "paneo horizontal": 0
+ },
+ "camara": {
+  "temblor_tomas_pct": 1,
+  "temblor_amplitud": 3.51,
+  "temblor_hz": 4.85,
+  "acercamiento_tipico_pct": 7.6,
+  "golpes_zoom_por_minuto": 0.95,
+  "movimiento_en_cuadro_pct": 1.17
+ },
+ "transiciones_pct": {
+  "corte directo": 99,
+  "destello blanco": 1,
+  "disolvencia": 0,
+  "fundido a negro": 0,
+  "barrido (desenfoque)": 0
+ },
+ "efectos_candidatos_por_minuto": {
+  "posibles partículas (hojas/lluvia/chispas/polvo)": 7.19,
+  "destello": 1.64,
+  "posible cámara lenta": 0.94,
+  "sacudida de impacto": 0.89,
+  "cambio de color": 0.44,
+  "imagen congelada": 0.34,
+  "pantalla negra": 0.22,
+  "pantalla blanca": 0.07
+ },
+ "ambiente_pct": {
+  "alegre": 51,
+  "tenso": 27,
+  "triste": 16,
+  "acción": 4,
+  "terror": 1
+ },
+ "hora_pct": {
+  "día": 79,
+  "noche": 16,
+  "atardecer": 5
+ },
+ "lugar_pct": {
+  "exterior": 77,
+  "interior": 23
+ },
+ "personajes_pct": {
+  "uno": 67,
+  "dos": 18,
+  "ninguno": 11,
+  "tres o más": 4
+ },
+ "subtitulos": {
+  "videos_con_subtitulos_pct": 100,
+  "modo": "palabra por palabra",
+  "palabras_por_subtitulo": 1.0,
+  "duracion_s": 0.17,
+  "posicion_y_pct": 68.0,
+  "alto_letra_pct": 5.21,
+  "lineas": 1.0,
+  "color": "blanco",
+  "resaltado_pct": 23.0,
+  "color_resaltado": "rojo",
+  "contorno_oscuro_pct": 61.0,
+  "mayusculas_pct": 1.0,
+  "aparece_vs_voz_ms": 93.0,
+  "entrada_pop_pct": 67.0
+ },
+ "voz": {
+  "idioma": "es",
+  "palabras_por_s": 3.85,
+  "pausas_por_minuto": 0.0,
+  "primera_palabra_s": 0.0,
+  "tiempo_hablando_pct": 90.0
+ },
+ "audio": {
+  "lufs": -14.2,
+  "golpes_sonido_por_minuto": 1.2,
+  "musica_probable_pct": 1,
+  "bpm": 125.0,
+  "fondo_sonoro_pct": 98.0
+ },
+ "historia": {
+  "gancho_dura_s": 3.55,
+  "preguntas_por_minuto": 1.05,
+  "giros_por_minuto": 3.6,
+  "giros_por_decimo_del_video": [
+   41,
+   53,
+   73,
+   64,
+   63,
+   56,
+   48,
+   55,
+   54,
+   49
+  ],
+  "termina_en_pregunta_pct": 7,
+  "llamado_accion_pct": 92
+ },
+ "reglas": [
+  "Cortar cada 1.4 s en promedio (casi todas las tomas entre 0.6 y 2.7 s).",
+  "Ritmo por partes: inicio 1.5 s · medio 1.4 s · final 1.6 s por toma.",
+  "En los primeros 3 s hace 1 cortes (gancho visual).",
+  "Planos más usados: plano medio 37%, plano entero 20%, plano general 17%, primer plano 12%.",
+  "Cámara: fija 46%, acercamiento lento 41%, alejamiento lento 8%, golpe de zoom 3%.",
+  "Temblor en 1% de las tomas (amplitud 3.51, 4.85 Hz).",
+  "Golpes de zoom: 0.9 por minuto.",
+  "Transiciones especiales: destello blanco 1%, disolvencia 0%, fundido a negro 0%, barrido (desenfoque) 0% (el resto, corte directo).",
+  "Subtítulos: palabra por palabra, 1.0 palabras, a 68.0% de altura, letra 5.21% del alto, color blanco, resalta en rojo.",
+  "Narración a 3.9 palabras/s; empieza a hablar en 0.0 s.",
+  "Volumen final ≈ -14 LUFS; 1.2 golpes de sonido por minuto; música casi nunca.",
+  "Historia: 3.6 giros y 1.1 preguntas por minuto; termina en pregunta en 7% de los videos."
+ ]
+}

@@ -3,6 +3,10 @@
 #   py -X utf8 Analizador/motor/analizar.py --creador ClusterK    -> solo ese creador
 #   py -X utf8 Analizador/motor/analizar.py --video X.mp4 --creador Nosotros   -> un video suelto (de cualquier carpeta)
 #   opciones: --forzar (re-analizar aunque ya este), --solo-formula, --sin-ocr, --sin-clip, --umbral 22
+#   en paralelo: varios trabajadores que se reparten lo nuevo. OJO: medido 2026-11-08 con RTX 5070 de 12 GB: 2 a la vez
+#   NO fue mas rapido (la memoria de video se lleno a 11,6 GB y cada video tardo el doble). Sirve con una tarjeta de 16 GB+.
+#     py -X utf8 analizar.py --parte 1/2 --sin-formula   y   py -X utf8 analizar.py --parte 2/2 --sin-formula
+#     y al final una vez:  py -X utf8 analizar.py --solo-formula
 import argparse, os, sys, time, traceback
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import numpy as np
@@ -135,6 +139,8 @@ def main():
     ap.add_argument("--sin-ocr", action="store_true")
     ap.add_argument("--sin-clip", action="store_true")
     ap.add_argument("--umbral", type=float, default=22.0)
+    ap.add_argument("--parte", help="k/n: este trabajador analiza solo 1 de cada n videos pendientes (varios motores a la vez)")
+    ap.add_argument("--sin-formula", action="store_true", help="no reconstruir formulas al final (lo hace uno solo con --solo-formula)")
     args = ap.parse_args()
     import estilo
 
@@ -164,17 +170,25 @@ def main():
             if hecho and not args.forzar:
                 continue
             pendientes.append((c, ruta, clave, st))
+        if args.parte:
+            k, n = (int(x) for x in args.parte.split("/"))
+            pendientes = [p for i, p in enumerate(pendientes) if i % n == k - 1]
+            log("Trabajador %d de %d" % (k, n))
         log("Videos encontrados: %d · por analizar: %d" % (len(lista), len(pendientes)))
         for k, (c, ruta, clave, st) in enumerate(pendientes, 1):
             log("\n[%d/%d]" % (k, len(pendientes)))
             try:
                 out = analizar_video(ruta, c, args)
+                reg = leer_json(REGISTRO, {})          # releer: otro trabajador pudo haber guardado lo suyo
                 reg[clave] = {"tam": st.st_size, "version": VERSION, "salida": out, "fecha": time.strftime("%Y-%m-%d %H:%M")}
                 guardar_json(REGISTRO, reg)
                 tocados.add(c)
             except Exception:
                 log("  ERROR con este video (se sigue con los demás):")
                 traceback.print_exc()
+    if args.sin_formula:
+        log("Sin fórmulas (--sin-formula): correr una vez --solo-formula al final")
+        return
     creadores_formula = {args.creador} if args.creador else (tocados or {c for c, _ in lista})
     if args.solo_formula and not args.creador:
         creadores_formula = {d for d in os.listdir(RESULTADOS) if os.path.isdir(os.path.join(RESULTADOS, d))}

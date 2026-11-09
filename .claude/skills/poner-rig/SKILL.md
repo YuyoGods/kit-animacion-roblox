@@ -7,6 +7,7 @@ description: Arma el rig R15 (huesos para animar) de un personaje exportado de R
 
 Seguir **directo y sin explicaciones largas** la *Receta* de `docs/03_PERSONAJES.md`:
 
+0. Si los personajes están en **Roblox Studio** y hay que exportarlos (uno o muchos): seguir `Herramientas/roblox/LEEME.md` (aislar, exportar, restaurar y crear `partes.json`); después el paso 3 para cada uno.
 1. Ubicar la carpeta: `Personajes/<Protagonista|Secundarios|Pueblo_NPC>/<Nombre>/` (familia, amigos, autoridades → `Secundarios`). Revisar que estén `.obj` + `.mtl` + `.png`.
 2. Si hay un rig anterior (`<Nombre>_R15_Rig.blend`), moverlo a `Respaldos/` antes de seguir.
 3. Correr el rig automático: `blender -b --factory-startup --python Herramientas/blender/armar_rig_r15_auto.py -- "<carpeta>" <Nombre>` (centra, voltea si hace falta, reconoce piezas y accesorios). Revisar el mapa que imprime. Si falla, usar la plantilla manual (`armar_rig_r15_plantilla.py`).

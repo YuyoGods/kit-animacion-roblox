@@ -7,7 +7,7 @@
 #   2) audio/narracion_tiempos.json  (voz de ElevenLabs sin recortar)
 # Deja: audio/tomas_voz.json -> {"fps", "frames", "voz_inicio", "audio", "tomas": [...], "palabras": [...]}
 #   (los scripts de animacion leen las tomas de ahi; "palabras" sirve para sincronizar golpes, ej. "pum")
-import difflib, json, math, os, sys, unicodedata
+import difflib, json, math, os, re, sys, unicodedata
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from config import FPS, episodio  # noqa: E402
@@ -62,14 +62,45 @@ else:
     audio = "narracion.mp3"
 
 # ---- emparejar las palabras del guion con las que se oyen (tolera palabras mal entendidas)
-guion = [(k, norm(w)) for k, l in enumerate(lineas) for w in l.split() if norm(w)]
-sm = difflib.SequenceMatcher(a=[w for _, w in guion], b=[p["w"] for p in pal], autojunk=False)
-mapa = {}
-for bl in sm.get_matching_blocks():
-    for d in range(bl.size):
-        mapa[bl.a + d] = bl.b + d
+guion = [(k, norm(w), w) for k, l in enumerate(lineas) for w in l.split() if norm(w)]
+
+
+def emparejar():
+    sm = difflib.SequenceMatcher(a=[w for _, w, _ in guion], b=[p["w"] for p in pal], autojunk=False)
+    m = {}
+    for bl in sm.get_matching_blocks():
+        for d in range(bl.size):
+            m[bl.a + d] = bl.b + d
+    return m
+
+
+mapa = emparejar()
+# ---- onomatopeyas que Whisper no escribe (¡Miau!, ¡Pum!): si una palabra del guion no se oyo, pero en su hueco la
+#      revision de recortar_pausas encontro un "sonido de mas", esa palabra ES ese sonido (asi los golpes y el
+#      subtitulo caen en su momento).
+if os.path.exists(vp_path):
+    sonidos = []
+    for pr in (vp.get("revision") or {}).get("problemas", []):
+        if pr.get("tipo") == "sonido de mas" and pr.get("t") is not None:
+            m_ = re.search(r"([0-9.]+) s", pr.get("detalle", ""))
+            sonidos.append((float(pr["t"]), float(m_.group(1)) if m_ else 0.3))
+    nuevos = []
+    for gi, (k, w, crudo) in enumerate(guion):
+        if gi in mapa:
+            continue
+        ant = max([g for g in mapa if g < gi], default=None); sig = min([g for g in mapa if g > gi], default=None)
+        lo = pal[mapa[ant]]["t1"] if ant is not None else 0.0
+        hi = pal[mapa[sig]]["t0"] if sig is not None else 1e9
+        hay = [sn for sn in sonidos if lo - 0.05 <= sn[0] <= hi + 0.05]
+        if hay:
+            sonidos.remove(hay[0])
+            nuevos.append({"texto": crudo, "w": w, "t0": hay[0][0], "t1": hay[0][0] + hay[0][1]})
+            print("Palabra sin texto en Whisper (onomatopeya): %s -> el sonido de %.2f s" % (crudo, hay[0][0]))
+    if nuevos:
+        pal = sorted(pal + nuevos, key=lambda p: p["t0"])
+        mapa = emparejar()
 ini_linea, fin_linea = {}, {}
-for gi, (k, _) in enumerate(guion):
+for gi, (k, _, _) in enumerate(guion):
     if gi in mapa:
         ini_linea.setdefault(k, mapa[gi]); fin_linea[k] = mapa[gi]
 faltan = [k for k in range(len(lineas)) if k not in ini_linea]

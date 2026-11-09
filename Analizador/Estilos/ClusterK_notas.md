@@ -62,3 +62,34 @@
 3. Protagonista con defecto → **"hasta el día en que…"** → su defecto lo salva → callbacks al final.
 4. **Cortar en cada palabra clave** (tomas de ~1,5 s), cámara fija o acercamiento lento, subtítulos de 1 palabra con la clave en rojo.
 5. Cierre: **giro o misterio de "parte 2" + pregunta al público ("¿Y tú?", "¿Tú qué habrías hecho?") + suscríbete**.
+
+## Lo que enseñan sus textos (24 historias leídas completas, 2026-11-07)
+> Los textos los pasó el usuario en el chat; aquí solo va el análisis (sin copiar sus historias).
+
+### Sus 4 plantillas (no usa una sola)
+| Plantilla | Cuántas | Cómo empieza | Giro típico |
+|---|---|---|---|
+| **Crush con un secreto** | 11 de 24 | Una frase con contradicción: "[algo absurdo con mi crush] y fue el peor error de mi vida" / "La chica que me ignora es mi fan y no sabe que soy yo" / "…el problema es que el admirador soy yo" | **Ella ya lo sabía o lo planeó todo** (8 de 11): cambió el papel del sorteo, ella cerró la puerta, también recuerda el bucle, el gato era agente doble, la letra chica dice "no funciona con quien ya está enamorado de ti" |
+| **"En este pueblo / mundo, [regla]"** | 10 de 24 | La regla + un ejemplo cotidiano en la misma frase ("si empujas a alguien a una piscina el lunes, el martes te mojas") | Una **cláusula escondida de la regla** que se dijo al inicio como detalle ("el sonar no ve lo que ya te está tocando", "las palabras regresan como sentimiento") o "el mundo no es lo que parece" (los titanes somos nosotros) |
+| **Competencia absurda** | 2 (+1) | Empieza a media acción: ayuda a alguien sin querer → "esta es la carrera más lenta del mundo" → gana el último → un millón | Elimina rivales con distracciones; el campeón despierta por comida; final anticlimático chistoso ("ahora la yegua es millonaria y yo le limpio el establo") |
+| **Terror con eco** | 4–6 | Imagen inquietante en la primera frase ("mi reflejo estaba parado en el techo con el pueblo bajo el agua") | Final oscuro donde **se repite una frase del inicio** ahora contra el narrador ("Está justo detrás de mí") |
+
+### Técnicas que repite (usar varias en cada guion)
+1. **El título ES la primera frase**, y ya trae la contradicción. La segunda frase da la consecuencia concreta.
+2. **Empezar a media acción** (cold open): la primera escena es el accidente o el problema; la explicación viene después.
+3. **Plantar en boca de otro**: la clave del final la dice un personaje secundario al principio, como detalle sin importancia (el comentarista: "su único punto débil es la espalda"; la abuela: "el diamante también sale feo de la tierra").
+4. **Listas de 3–5 intentos que escalan**, cada uno con remate de 1–3 palabras ("No.", "Odio el pistacho.", "Ahora veo en la oscuridad.", "Victoria contra una peluca.").
+5. **Contadores y números exactos**: "faltaban 4 días", "llevo 37 martes", "caso número 47", "300 peleas invicto", "36 rayitas". Dan urgencia y son chistosos.
+6. **Consecuencias literales y absurdas**: el croissant llegó a Italia y ganó un premio; la pirámide ahora tiene ventana; el perro parece tapete.
+7. **El final repite el inicio con los papeles cambiados** (la técnica más fuerte): el campeón lloraba "gracias" al soltar los guantes → al final el protagonista llora "gracias"; "adivina cuál es" → aparecen cuatro papás: "adivina cuál es su papá".
+8. **Remate chico después del momento emotivo** ("Brian bailó toda la noche con la puerta. Le ganó.").
+9. **Lección en una frase o ninguna**: en las de crush casi nunca hay moraleja.
+10. **Meta personal con fecha**: invitar a alguien al baile del viernes, el cumpleaños de mamá, el examen.
+11. **Corazón familiar** en las de regla: la hermanita, la mamá, el niño rico que cena solo.
+12. **Cierre**: pregunta pegada al tema ("¿Tú a quién le apuntarías?", "¿Tú cuántos martes aguantarías?") + "Te leo en los comentarios" + "suscríbete para más historias".
+
+### Largo y voz
+- De ~250 a ~650 palabras (≈1:10 a 2:50). Las de crush son las más cortas (≈1:20–1:45); las de regla y terror, las más largas.
+- Frases de 3 a 10 palabras. Diálogos de una línea, casi siempre con remate.
+- Español mexicano neutro y juvenil (tantito, papitas, refri, bravucón, "bro").
+- 1 de cada 4 historias termina triste u oscura. El resto, feliz o romántico con un último chiste.

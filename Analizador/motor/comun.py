@@ -61,7 +61,7 @@ def leer_audio(ruta, sr=16000):
 
 def guardar_json(ruta, datos):
     os.makedirs(os.path.dirname(ruta), exist_ok=True)
-    tmp = ruta + ".tmp"
+    tmp = ruta + ".%d.tmp" % os.getpid()          # un temporal por proceso: varios motores a la vez no chocan
     with open(tmp, "w", encoding="utf-8") as f:
         json.dump(datos, f, ensure_ascii=False, indent=1, default=_np)
     os.replace(tmp, ruta)

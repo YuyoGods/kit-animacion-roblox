@@ -33,9 +33,21 @@ Se construye sobre una copia del Pueblo con `Escenarios/Pueblo/scripts/interiore
 | Presidencia PB | vestíbulo z 1,5 | Piso de ajedrez, alfombra roja, escalera central (y 474–486), retratos, banderas, INFORMES, maqueta del pueblo, candil |
 | Presidencia 2.º piso | z 10,8 | **Despacho del alcalde = ala derecha completa** (x 12–27, y 467–489); cabildo en el ala izquierda; secretaría al frente |
 | Torre del reloj | z 22 | Engranes (`Pres_Engrane*`, girar en Y local), péndulo (`Pres_Pendulo`), campana; se ve la carátula por detrás |
+- **Parque de la Fortuna** (`Escenarios/Pueblo_v2/scripts/parque_fortuna.py`, repetible; colección `Parque_Fortuna`): al este del centro, x 142–230, y 300–404, entrada por la calle norte en (186, 404). Como un parque real (por ahora la única atracción es la rueda): arco con letrero, taquillas y torniquetes, avenida con 4 puestos (Galletas de la fortuna, Algodones, Palomitas, Tiro al blanco) y guirnaldas, área de mesas con sombrillas (x ≈ 157–166, y 378–389), plaza redonda (centro (186, 352), r 21) con jardineras de flores, bancas largas (asiento z 1,68) y la fila con vallas frente al andén.
+  - **Rueda de la fortuna**: centro (186, 326), eje a z ≈ 29,4, radio de pivotes 17; 10 cápsulas grandes (caben dos sentados con espacio, frente abierto para ver las caras) que miran al norte (+Y). Gira con el vacío `Rueda_Giro` (rotación Y, en radianes; las cápsulas se quedan derechas solas). `Rueda_Cabina_01` (rosa) es la de la pareja: con `Rueda_Giro` = 0 está arriba, piso z 35,6, centro (186, 330,3); propiedades `piso_z_local` y `asiento_z_local`. Andén a z 1,6 con escaleras al norte.
+  - **Luces**: `Parque_Control["luces"]` (0,25 de día … 1 de noche) maneja los LED de arcoíris de los rayos, focos, letreros, la luz dentro de la cápsula 01 y las luces del parque.
+- Gente de fondo: `Herramientas/blender/extras_npc.py` (anexa NPC y los deja atendiendo, sentados platicando, formados o comprando).
 - Puertas: girar en Z `CasaAncha_0X_PuertaBisagra` y `Pres_PuertaIzq/Der_Bisagra` (≈1,6 rad = abierta).
 - Coordenadas de las casas: **locales** de su vacío (frente hacia −Y; planta baja z 1,0; 2.º piso z 9,4).
 - Fotos de revisión de cualquier escenario: `Herramientas/blender/fotos_escenario.py` (cámaras temporales, también de noche).
+
+## Cielo decorativo (`Herramientas/blender/cielo.py`)
+- **De día**: azul con degradado (más intenso arriba), nubes blancas esponjosas que avanzan despacito y un **sol blanco grande con brillo suave** (bloom pintado en el cielo: no se ve el borde del círculo y el cielo se despeja a su alrededor), del lado de donde viene la luz del Sol del mapa, a 26° sobre el horizonte. **De noche**: azul muy oscuro con estrellas.
+- **Solo lo ve la cámara**: la luz y el brillo del mapa salen del `Background` de siempre, así que no cambian (medido en el Pueblo: diferencia promedio 0,26 de 765 en los píxeles del mapa). El sol no da rayos ni luz.
+- **Cambia solo a noche**: cuando un episodio oscurece el color del `Background` (como la toma de la colina de EP002), el cielo pasa a estrellas sin hacer nada más.
+- Ponerlo: `blender.exe -b mapa.blend --python Herramientas/blender/cielo.py -- --guardar` (o en el Blender abierto: `py Herramientas/blender/bl.py Herramientas/blender/cielo.py`). Se puede repetir: rehace solo sus nodos (`Cielo_…`). Ajustes desde un script: `cielo.poner(escena, nubes=0.55, estrellas=1.0, sol=True, sol_altura=26)`; quitarlo: `cielo.quitar(escena)`.
+- Ya está puesto en `Pueblo_v2` (los episodios nuevos lo traen de una vez: solo cambian la historia y los personajes) y en EP002.
+- **En los scripts de episodio** que hacen día/noche con keyframes: usar el `Background` que **no** empieza con `Cielo_` (el que ilumina) y **no** llamar `animation_data_clear()` del mundo (borraría los drivers del cielo): solo `w.node_tree.animation_data.action = None` antes de poner los keyframes.
 
 ## Cómo agregar un escenario nuevo
 Crear `Escenarios/<Nombre>/` con `scripts/` (construcción repetible) y guardar un `<Nombre>_set.blend` limpio. Documentar aquí su mapa.

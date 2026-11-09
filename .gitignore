@@ -5,6 +5,12 @@
 MI_*.md
 !MI_CANAL.ejemplo.md
 mi_config.json
+PROGRESO_NOCTURNO.md
+/ENTRENAMIENTO_ESTILO.md
+/MEJORAS_*.md
+# catalogo de lo que existe en CADA PC (sus personajes y mapas): lo crea instalar.py / Herramientas/catalogo.py
+docs/10_CATALOGO.md
+.venv/
 
 # Analizador: videos de otros creadores y resultados con sus imágenes (las fórmulas de Estilos/ SÍ se comparten)
 Analizador/Videos_para_analizar/*
@@ -51,6 +57,12 @@ previews/
 *.mp3
 Thumbs.db
 desktop.ini
+# storyboard del navegador: ya no se usa (dejaba a los personajes tiesos). Solo viaja su MOTOR DE POSES
+Herramientas/storyboard/*
+!Herramientas/storyboard/sb_blender.py
+!Herramientas/storyboard/web/
+Herramientas/storyboard/web/*
+!Herramientas/storyboard/web/poses.json
 
 # Estilo propio de cada usuario (sus episodios analizados)
 Analizador/Estilos/Nosotros*

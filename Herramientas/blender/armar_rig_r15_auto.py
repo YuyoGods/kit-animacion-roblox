@@ -3,7 +3,9 @@
 # - Centra el modelo y lo voltea para que mire a -Y si vino al reves (lo detecta por los pies).
 # - Reconoce las 15 piezas por su posicion y pega cada accesorio al hueso mas cercano (cabeza / torso / cadera).
 # - Mismo rig que Crista (FK + IK, mismos nombres de huesos): las animaciones sirven para todos.
-# Uso: blender -b --factory-startup --python armar_rig_r15_auto.py -- <carpeta_del_personaje> <Nombre>
+# Uso: blender -b --factory-startup --python armar_rig_r15_auto.py -- <carpeta_del_personaje> <Nombre> [voltear|no_voltear]
+#   El 3er dato es opcional: fuerza el giro si la deteccion automatica falla (botas, faldas o mangas anchas).
+#   Exportado con "Archivo > Exportar como .obj" de un personaje que en Studio mira a -Z (LookVector 0,0,-1) -> voltear.
 # Resultado: <Nombre>_R15_Rig.blend + previews/ en la carpeta del personaje. No modifica los archivos originales.
 import bpy, bmesh, math, os, sys, glob
 from mathutils import Vector, Matrix
@@ -13,6 +15,7 @@ if len(_a) < 2:
     sys.exit("Uso: blender -b --factory-startup --python armar_rig_r15_auto.py -- CARPETA Nombre")
 D = os.path.abspath(_a[0])
 NOMBRE = _a[1]
+MODO_GIRO = _a[2] if len(_a) > 2 else "auto"
 OUT_BLEND = os.path.join(D, NOMBRE + "_R15_Rig.blend")
 PREV = os.path.join(D, "previews")
 os.makedirs(PREV, exist_ok=True)
@@ -27,9 +30,31 @@ todos = []
 for f in objs:
     bpy.ops.wm.obj_import(filepath=f, forward_axis='NEGATIVE_Z', up_axis='Y', use_split_groups=True)
     todos += list(bpy.context.selected_objects)
-cuerpo = [o for o in todos if not o.name.lower().startswith("handle")]
-accs_l = [o for o in todos if o.name.lower().startswith("handle")]
-if len(cuerpo) != 15:
+# partes.json (opcional, lo genera Claude desde Roblox Studio): nombre real de cada grupo del OBJ,
+# piezas que no se exportaron (invisibles o tapadas por ropa en capas) y si cada accesorio es ropa en capas (WrapLayer).
+PJ = os.path.join(D, "partes.json")
+INFO, FALTAN = {}, []
+if os.path.exists(PJ):
+    import json
+    _pj = json.load(open(PJ, encoding="utf-8"))
+    INFO = {g["grupo"]: g for g in _pj["grupos"]}
+    FALTAN = list(_pj.get("faltan", []))
+    if MODO_GIRO == "auto" and "voltear" in _pj.get("orientacion", ""):
+        MODO_GIRO = "voltear"
+    print("usando partes.json:", len(INFO), "grupos; faltan:", FALTAN)
+
+
+def _info(o):
+    return INFO.get(o.name) or INFO.get(o.name.rsplit(".", 1)[0])
+
+
+if INFO:
+    cuerpo = [o for o in todos if _info(o) and _info(o)["tipo"] == "cuerpo"]
+    accs_l = [o for o in todos if o not in cuerpo]
+else:
+    cuerpo = [o for o in todos if not o.name.lower().startswith("handle")]
+    accs_l = [o for o in todos if o.name.lower().startswith("handle")]
+if len(cuerpo) + len(FALTAN) != 15:
     sys.exit("Se esperaban 15 piezas R15 y hay %d: %s" % (len(cuerpo), [o.name for o in cuerpo]))
 
 
@@ -45,12 +70,20 @@ cen = {n: (a + b) / 2 for n, (a, b) in K.items()}
 cabeza = max(cuerpo, key=lambda o: cen[o.name].z)
 hc = cen[cabeza.name].copy()
 zmin = min(K[o.name][0].z for o in todos)
-lado = [o for o in cuerpo if 0.15 < abs(cen[o.name].x - hc.x) < 0.6]          # piernas y pies
-pies = sorted(lado, key=lambda o: cen[o.name].z)[:2]
-piernas = [o for o in lado if o not in pies]
-adelante = sum(K[p.name][1].y for p in pies) / 2 - max(K[o.name][1].y for o in piernas)
-atras = min(K[o.name][0].y for o in piernas) - sum(K[p.name][0].y for p in pies) / 2
-volteado = adelante > atras + 0.05                                              # los pies apuntan a +Y
+try:
+    lado = [o for o in cuerpo if 0.15 < abs(cen[o.name].x - hc.x) < 0.6]          # piernas y pies
+    pies = sorted(lado, key=lambda o: cen[o.name].z)[:2]
+    piernas = [o for o in lado if o not in pies]
+    adelante = sum(K[p.name][1].y for p in pies) / 2 - max(K[o.name][1].y for o in piernas)
+    atras = min(K[o.name][0].y for o in piernas) - sum(K[p.name][0].y for p in pies) / 2
+    volteado = adelante > atras + 0.05                                          # los pies apuntan a +Y
+except (ValueError, ZeroDivisionError):
+    volteado = False
+    if MODO_GIRO == "auto":
+        sys.exit("No pude detectar hacia donde mira: correr con voltear o no_voltear")
+if MODO_GIRO in ("voltear", "no_voltear"):
+    print("giro forzado:", MODO_GIRO, "(automatico decia:", volteado, ")")
+    volteado = MODO_GIRO == "voltear"
 N = (Matrix.Translation((0, 0, -zmin)) @ (Matrix.Rotation(math.pi, 4, 'Z') if volteado else Matrix.Identity(4))
      @ Matrix.Translation((-hc.x, -hc.y, 0)))
 for o in todos:
@@ -68,11 +101,13 @@ def _bc(o):
 
 
 C = {o.name: _bc(o) for o in todos}
-col = sorted([o for o in cuerpo if abs(C[o.name].x) <= 0.2], key=lambda o: -C[o.name].z)
-if len(col) != 3:
+mapa = {o.name: _info(o)["nombre"] for o in cuerpo} if INFO else {}
+col = [] if INFO else sorted([o for o in cuerpo if abs(C[o.name].x) <= 0.2], key=lambda o: -C[o.name].z)
+if not INFO and len(col) != 3:
     sys.exit("No pude reconocer cabeza y torso (piezas al centro: %s)" % [o.name for o in col])
-mapa = {col[0].name: "Head", col[1].name: "UpperTorso", col[2].name: "LowerTorso"}
-for nombre_lado, signo in (("Right", -1), ("Left", 1)):                       # mirando a -Y, su derecha es -X
+if not INFO:
+    mapa = {col[0].name: "Head", col[1].name: "UpperTorso", col[2].name: "LowerTorso"}
+for nombre_lado, signo in ((() if INFO else (("Right", -1), ("Left", 1)))):   # mirando a -Y, su derecha es -X
     pz = [o for o in cuerpo if C[o.name].x * signo > 0.2]
     brazos = sorted([o for o in pz if abs(C[o.name].x) >= 0.6], key=lambda o: -C[o.name].z)
     patas = sorted([o for o in pz if abs(C[o.name].x) < 0.6], key=lambda o: -C[o.name].z)
@@ -88,16 +123,91 @@ for o in cuerpo:
     print("  %-22s -> %s" % (o.name, n))
     o.name = NOMBRE + "_" + n; o.data.name = o.name; P[n] = o
 
+# piezas que no vinieron en el OBJ: pieza "fantasma" oculta (solo sirve para medir la articulacion)
+VECINOS = {"LowerArm": ("UpperArm", "Hand"), "LowerLeg": ("UpperLeg", "Foot")}
+for n in sorted(FALTAN, key=lambda n: n.replace("Right", "").replace("Left", "") in VECINOS):
+    otro = n.replace("Right", "#").replace("Left", "Right").replace("#", "Left")
+    lado_n = "Right" if n.startswith("Right") else "Left"
+    parte = n[len(lado_n):]
+    if otro in P and not P[otro].get("oculto"):
+        me = P[otro].data.copy()
+        me.transform(Matrix.Scale(-1, 4, (1, 0, 0))); me.flip_normals()
+        como = "espejo de " + otro
+    elif parte in VECINOS and all(lado_n + v in P for v in VECINOS[parte]):
+        arriba, abajo = (P[lado_n + v] for v in VECINOS[parte])
+        va = [v.co for v in arriba.data.vertices]; vb = [v.co for v in abajo.data.vertices]
+        z1, z0 = min(v.z for v in va), max(v.z for v in vb)
+        x0, x1 = min(v.x for v in va), max(v.x for v in va)
+        y0, y1 = min(v.y for v in va), max(v.y for v in va)
+        me = bpy.data.meshes.new(n)
+        bm = bmesh.new(); bmesh.ops.create_cube(bm, size=1.0); bm.to_mesh(me); bm.free()
+        me.transform(Matrix.Translation(((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2)) @ Matrix.Diagonal(((x1 - x0) * 0.9, (y1 - y0) * 0.9, max(0.05, z1 - z0), 1)))
+        como = "caja entre %s y %s" % VECINOS[parte]
+    else:
+        sys.exit("Falta la pieza %s y no hay de donde copiarla" % n)
+    o = bpy.data.objects.new(NOMBRE + "_" + n, me); sc.collection.objects.link(o)
+    o.hide_render = True; o.hide_viewport = True; o["oculto"] = 1
+    P[n] = o; C[o.name] = _bc(o)
+    print("  (no vino en el OBJ) -> %s oculta, %s" % (n, como))
+
 # ---------------- accesorios: al hueso mas cercano ----------------
+# Cada vertice del accesorio se compara con la pieza del cuerpo mas cercana:
+#  - casi todo junto a una pieza (>= 85 %)     -> rigido a ese hueso (zapatos, mochila, sombrero...)
+#  - llega a la mitad de arriba de la cabeza   -> rigido a Head (cabello, gorros, colas largas)
+#  - cubre varias piezas (ropa en capas: mangas, chamarra, falda, pantalon 3D) -> se DEFORMA con los huesos
+from mathutils.bvhtree import BVHTree
 cab_centro_z = _bc(P["Head"]).z
-cintura_z = max(v.co.z for v in P["LowerTorso"].data.vertices)
+BVH = {n: BVHTree.FromPolygons([v.co.copy() for v in o.data.vertices], [tuple(f.vertices) for f in o.data.polygons])
+       for n, o in P.items()}
 ES = {"Head": "Cabeza", "UpperTorso": "Torso", "LowerTorso": "Cadera"}
 A = {}
+PESOS = {}          # accesorio deformable -> {hueso: [(indice_vertice, peso), ...]}
 for o in sorted(accs_l, key=lambda o: o.name):
     zmax = max(v.co.z for v in o.data.vertices)
-    hueso = "Head" if zmax > cab_centro_z else ("UpperTorso" if C[o.name].z > cintura_z else "LowerTorso")
-    n = "Acc_%s_%s" % (ES[hueso], "".join(ch for ch in o.name if ch.isdigit()) or o.name)
-    print("  %-22s -> %s (%s)" % (o.name, n, hueso))
+    inf = _info(o) or {}
+    tipo = inf.get("accType", "Unknown")
+    cuenta = {}
+    pesos = {}
+    for v in o.data.vertices:
+        ds = {}
+        for n, t in BVH.items():
+            r = t.find_nearest(v.co)
+            ds[n] = r[3] if r[0] is not None else 1e9
+        dmin = min(ds.values())
+        cerca = {n: math.exp(-(d - dmin) / 0.05) for n, d in ds.items() if d < dmin + 0.2}
+        tot = sum(cerca.values())
+        mejor = min(ds, key=ds.get)
+        cuenta[mejor] = cuenta.get(mejor, 0) + 1
+        for n, w in cerca.items():
+            pesos.setdefault(n, []).append((v.index, w / tot))
+    nv = max(1, len(o.data.vertices))
+    dom = max(cuenta, key=cuenta.get)
+    frac = cuenta[dom] / nv
+    grandes = {k for k, c in cuenta.items() if c / nv >= 0.1}
+    if frac >= 0.85:
+        hueso = dom
+    elif inf.get("wrap"):                                   # ropa en capas de Roblox: se deforma
+        hueso = "DEFORMA"
+    elif tipo in ("Hair", "Hat", "Face", "Eyebrow", "Eyelash"):
+        hueso = "Head"
+    elif tipo in ("Neck", "Shoulder", "Front", "Back"):
+        hueso = "UpperTorso"
+    elif tipo == "Waist":
+        hueso = "LowerTorso"
+    elif zmax > cab_centro_z:
+        hueso = "Head"
+    elif grandes <= {"Head", "UpperTorso"}:                 # collares, bufandas
+        hueso = "UpperTorso"
+    else:
+        hueso = "DEFORMA"
+    if hueso == "DEFORMA":
+        PESOS[o.name] = pesos
+    etiqueta = ES.get(hueso, "Ropa" if hueso == "DEFORMA" else hueso)
+    n = "Acc_%s_%s" % (etiqueta, "".join(ch for ch in o.name if ch.isdigit()) or o.name)
+    reparto = ", ".join("%s %d%%" % (k, 100 * c / nv) for k, c in sorted(cuenta.items(), key=lambda kv: -kv[1])[:3])
+    print("  %-22s -> %s (%s) [%s] %s%s" % (o.name, n, hueso, reparto, tipo, " WRAP" if inf.get("wrap") else ""))
+    if o.name in PESOS:
+        PESOS[NOMBRE + "_" + n] = PESOS.pop(o.name)
     o.name = NOMBRE + "_" + n; o.data.name = o.name; A[n] = (o, hueso)
 
 # subir todo para que los pies toquen el piso (z = 0)
@@ -214,7 +324,12 @@ bpy.ops.object.mode_set(mode='EDIT')
 eb = arm_d.edit_bones
 
 
-def bone(name, head, tail, parent=None, connect=False, roll=0.0, deform=False):
+CUERPO_15 = set(P.keys())
+
+
+def bone(name, head, tail, parent=None, connect=False, roll=0.0, deform=None):
+    if deform is None:
+        deform = name in CUERPO_15          # solo deforman la ropa en capas; las piezas van pegadas al hueso
     b = eb.new(name); b.head = head; b.tail = tail; b.roll = roll
     if parent:
         b.parent = eb[parent]; b.use_connect = connect
@@ -372,7 +487,20 @@ def attach(o, bname):
 for n, o in P.items():
     attach(o, n)
 for n, (o, bname) in A.items():
-    attach(o, bname)
+    if bname != "DEFORMA":
+        attach(o, bname)
+        continue
+    # ropa en capas: se deforma con los huesos (grupos de vertices + modificador Armature)
+    for c in list(o.users_collection):
+        c.objects.unlink(o)
+    COL.objects.link(o)
+    o.parent = rig
+    o.matrix_parent_inverse = rig.matrix_world.inverted()
+    for hn, lista in PESOS[o.name].items():
+        vg = o.vertex_groups.new(name=hn)
+        for i, w in lista:
+            vg.add([i], w, 'REPLACE')
+    md = o.modifiers.new("Armature", 'ARMATURE'); md.object = rig
 for c in list(bpy.data.collections):
     if c not in (COL, WCOL) and len(c.objects) == 0 and c.name != NOMBRE.upper():
         pass

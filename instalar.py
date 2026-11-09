@@ -133,6 +133,13 @@ except OSError:
 if os.listdir(ruta("Personajes", "Protagonista")) in ([], ["LEEME.md"]):
     pendientes.append("Poner tu protagonista en Personajes/Protagonista/<Nombre>/ y pedirle a Claude su rig")
 
+# catalogo de lo que ya existe en ESTA PC (objetos, efectos, tus personajes y mapas): docs/10_CATALOGO.md (personal)
+try:
+    subprocess.run([sys.executable, "-X", "utf8", ruta("Herramientas", "catalogo.py")], check=True, capture_output=True)
+    print(OK, "catalogo de lo que ya existe: docs/10_CATALOGO.md")
+except Exception as e:
+    print(AVISO, "no se pudo crear docs/10_CATALOGO.md (py -X utf8 Herramientas/catalogo.py):", e)
+
 print("\n== Pendientes ==" if pendientes else "\n== Todo listo ==")
 for p in pendientes:
     print(" -", p)

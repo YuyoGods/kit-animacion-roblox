@@ -5,7 +5,7 @@
 import bpy, os, sys, json
 
 a = sys.argv[sys.argv.index("--") + 1:]
-out = a[0]
+out = os.path.abspath(a[0])     # ruta completa: Blender toma las relativas desde la raiz del disco
 pct = int(a[1]) if len(a) > 1 else 22
 S = int(a[2]) if len(a) > 2 else 8
 t0 = int(a[3]) if len(a) > 3 else 1

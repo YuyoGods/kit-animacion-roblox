@@ -2,6 +2,11 @@
 #   py Herramientas/rehacer_tramo.py EP001_Crista_Llega_Tarde 10 15              -> vista previa (50 %, 16 muestras)
 #   py Herramientas/rehacer_tramo.py EP001_Crista_Llega_Tarde 10 15 --final      -> calidad final
 #   py Herramientas/rehacer_tramo.py EP001_Crista_Llega_Tarde --deshacer         -> regresa los fotogramas del ultimo respaldo
+#   py Herramientas/rehacer_tramo.py EP004_Titulo --toma 12          -> rehace SOLO la toma 12 (un cambio de camara)
+#   py Herramientas/rehacer_tramo.py EP004_Titulo --toma 12-14       -> rehace las tomas 12 a 14
+#   py Herramientas/rehacer_tramo.py EP004_Titulo --tomas            -> lista las tomas con sus segundos y fotogramas
+# Las tomas salen de audio/tomas_voz.json (una linea de narracion = una toma = una camara). Trabajar por toma es la
+# regla del kit: si algo no gusta se cambia y se renderiza solo esa toma; el sonido se vuelve a mezclar solo.
 # Pasos: 1) respalda en Respaldos/ los fotogramas viejos de ese tramo, 2) renderiza solo ese tramo en segundo plano
 # desde el .blend GUARDADO del episodio, 3) si ya estan todos los fotogramas, vuelve a armar el MP4 (voz, efectos, subtitulos).
 # Antes de correrlo: guardar el .blend con los cambios del tramo (Ctrl+S en Blender).
@@ -13,9 +18,9 @@ from config import BLENDER, FPS, RESPALDOS, episodio, HERRAMIENTAS  # noqa: E402
 
 SEG_POR_CUADRO = {"preview": 1.0, "final": 5.0}     # medido en EP001 (RTX 5070)
 AJUSTES = {
-    "preview": "import bpy; s=bpy.context.scene; s.render.resolution_percentage=50; s.eevee.taa_render_samples=16; "
+    "preview": "import bpy; s=bpy.context.scene; s.render.resolution_percentage=50; s.eevee.taa_render_samples=16; s.eevee.shadow_ray_count=4; "
                "s.render.image_settings.file_format='PNG'; s.render.use_overwrite=True",
-    "final": "import bpy; s=bpy.context.scene; s.render.resolution_percentage=100; s.eevee.taa_render_samples=48; "
+    "final": "import bpy; s=bpy.context.scene; s.render.resolution_percentage=100; s.eevee.taa_render_samples=48; s.eevee.shadow_ray_count=4; "
              "s.render.image_settings.file_format='PNG'; s.render.use_overwrite=True",
 }
 
@@ -34,6 +39,8 @@ def main():
     ap.add_argument("--confirmado", action="store_true", help="aceptar renders de mas de 15 min")
     ap.add_argument("--sin-armar", action="store_true")
     ap.add_argument("--deshacer", action="store_true")
+    ap.add_argument("--toma", help="N o N-M: rehacer solo esas tomas (de audio/tomas_voz.json)")
+    ap.add_argument("--tomas", action="store_true", help="listar las tomas y sus segundos")
     a = ap.parse_args()
     modo = "final" if a.final else "preview"
     EP = episodio(a.ep)
@@ -51,6 +58,23 @@ def main():
         armar(a.ep, modo, carpeta)
         return
 
+    if a.tomas or a.toma:
+        tv = os.path.join(EP, "audio", "tomas_voz.json")
+        if not os.path.exists(tv):
+            sys.exit("Falta audio/tomas_voz.json (se crea con tomas_desde_voz.py despues de la voz)")
+        import json
+        tomas = {t["n"]: t for t in json.load(open(tv, encoding="utf-8"))["tomas"]}
+        if a.tomas:
+            for n, t in tomas.items():
+                print("Toma %2d  %6.2f–%6.2f s  f%04d–%04d  %s" % (n, (t["f_ini"] - 1) / FPS, t["f_fin"] / FPS,
+                                                                  t["f_ini"], t["f_fin"], t["texto"][:60]))
+            return
+        n0, n1 = (int(x) for x in (a.toma.split("-") + [a.toma])[:2]) if "-" in a.toma else (int(a.toma), int(a.toma))
+        if n0 not in tomas or n1 not in tomas:
+            sys.exit("No existe esa toma (hay %d)" % len(tomas))
+        a.desde = (tomas[n0]["f_ini"] - 1) / FPS
+        a.hasta = tomas[n1]["f_fin"] / FPS
+        print("Tomas %d–%d: %s" % (n0, n1, tomas[n0]["texto"][:70]))
     if a.desde is None or a.hasta is None or a.hasta <= a.desde:
         sys.exit("Uso: py rehacer_tramo.py EP###_Titulo DESDE HASTA (segundos) [--final]")
     blend = a.blend or os.path.join(EP, a.ep + ".blend")
