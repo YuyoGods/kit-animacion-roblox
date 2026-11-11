@@ -74,6 +74,7 @@ if os.path.exists(doc4):
 L += ["", "## Otras herramientas para el plano", "",
       "- Carteles y letreros pegados a objetos: `Herramientas/carteles.py` · contadores/relojes: carteles + `vfx`.",
       "- Caras por textura: `Herramientas/blender/caras_textura.py` · bocas para hablar (Sikelpa 21–25): `Herramientas/bocas_hablar.py`.",
+      "- Alturas (niños más bajos que los adultos): `Herramientas/blender/alturas.py` → `alturas.escalar(rig, \"nino\")` (adulto 5,1 · niño 4,0 · niño chico 3,45).",
       "- Revisión: `revisar_encuadre.py`, `revisar_ojos.py`, `revisar_objetos.py`, `revisar_agarre.py`, `detectar_superficies.py`."]
 os.makedirs(os.path.join(RAIZ, "docs"), exist_ok=True)
 open(os.path.join(RAIZ, "docs", "10_CATALOGO.md"), "w", encoding="utf-8").write("\n".join(L) + "\n")

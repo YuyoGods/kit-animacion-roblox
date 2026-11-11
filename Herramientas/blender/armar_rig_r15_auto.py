@@ -39,8 +39,10 @@ if os.path.exists(PJ):
     _pj = json.load(open(PJ, encoding="utf-8"))
     INFO = {g["grupo"]: g for g in _pj["grupos"]}
     FALTAN = list(_pj.get("faltan", []))
-    if MODO_GIRO == "auto" and "voltear" in _pj.get("orientacion", ""):
-        MODO_GIRO = "voltear"
+    # ojo: "no_voltear" contiene "voltear"; comparar la palabra final completa (personajes que miran a +Z, 2026-11-10)
+    _ori = _pj.get("orientacion", "").split("->")[-1].strip()
+    if MODO_GIRO == "auto" and _ori in ("voltear", "no_voltear"):
+        MODO_GIRO = _ori
     print("usando partes.json:", len(INFO), "grupos; faltan:", FALTAN)
 
 
@@ -267,11 +269,42 @@ for m in {m for o in P.values() for m in o.data.materials if m}:
         nt.links.remove(l)
     bs.inputs["Alpha"].default_value = 1.0
     mix = nt.nodes.new("ShaderNodeMix"); mix.data_type = 'RGBA'; mix.blend_type = 'MIX'
-    mix.inputs[6].default_value = (_lin(kd[0]), _lin(kd[1]), _lin(kd[2]), 1.0)   # A: color de la pieza
+    # A: color de la pieza. El Kd del .mtl de Roblox YA viene en lineal: si se pasa otra vez por _lin la piel de las
+    # cabezas tipo calcomania sale bronceada (mas oscura y naranja que las manos). Medido en 20 NPC (EP007, 2026-11-09).
+    mix.inputs[6].default_value = (kd[0], kd[1], kd[2], 1.0)
     nt.links.new(tx.outputs["Color"], mix.inputs[7])                             # B: la textura
     nt.links.new(tx.outputs["Alpha"], mix.inputs[0])                             # mezcla segun el alfa
     nt.links.new(mix.outputs[2], bs.inputs["Base Color"])
     print("  material del cuerpo con color de pieza:", m.name, [round(c, 2) for c in kd])
+
+
+# ---------------- texturas de MATERIAL de Roblox (cuero, tela, metal...) x color de la pieza ----------------
+# Una MeshPart sin TextureID exporta la textura GRIS de su Material y el color va en el Kd; Roblox los multiplica, pero el
+# importador de OBJ solo pone la textura: la capa negra del encapuchado salia blanca (EP012, 2026-11-11).
+def _textura_gris(img):
+    import numpy as np
+    a = np.empty(len(img.pixels), np.float32)
+    img.pixels.foreach_get(a)
+    a = a.reshape(-1, 4)[::97, :3]
+    return float((a.max(1) - a.min(1)).mean()) < 0.06
+
+
+_cuerpo = {m for o in P.values() for m in o.data.materials if m}
+for m in bpy.data.materials:
+    if m in _cuerpo or not m.use_nodes:
+        continue
+    nt = m.node_tree
+    bs = next((n for n in nt.nodes if n.type == 'BSDF_PRINCIPLED'), None)
+    tx = next((n for n in nt.nodes if n.type == 'TEX_IMAGE'), None)
+    kd = KD.get(m.name) or KD.get(m.name.rsplit(".", 1)[0])
+    if not (bs and tx and tx.image and kd) or min(kd) > 0.9 or not _textura_gris(tx.image):
+        continue
+    mul = nt.nodes.new("ShaderNodeMix"); mul.data_type = 'RGBA'; mul.blend_type = 'MULTIPLY'
+    mul.inputs[0].default_value = 1.0
+    nt.links.new(tx.outputs["Color"], mul.inputs[6])
+    mul.inputs[7].default_value = (kd[0], kd[1], kd[2], 1.0)
+    nt.links.new(mul.outputs[2], bs.inputs["Base Color"])
+    print("  textura de material x color:", m.name, [round(c, 2) for c in kd])
 
 
 # ---------------- articulaciones a partir de la geometria ----------------

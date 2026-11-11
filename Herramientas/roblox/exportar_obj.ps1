@@ -5,7 +5,10 @@
 # Uso (PowerShell, desde la raiz del kit):
 #   powershell -STA -File Herramientas\roblox\exportar_obj.ps1 -Ruta "C:\...\Personajes\Pueblo_NPC\Juan\Juan.obj" [-Titulo "Place1"]
 # -Titulo: parte del titulo de la ventana de Studio (si hay varias abiertas). No sobrescribe archivos.
-param([Parameter(Mandatory = $true)][string]$Ruta, [string]$Titulo = "")
+# -Espera N: deja Studio al frente N segundos antes de exportar (2026-11-11). Studio pinta la ropa clasica y la cara en la
+#   textura del cuerpo poco a poco y solo mientras dibuja: en personajes recien creados (copias R6->R15) usar -Espera 25
+#   y revisar que el .mtl tenga la textura del cuerpo (916x568); si no, borrar y repetir.
+param([Parameter(Mandatory = $true)][string]$Ruta, [string]$Titulo = "", [int]$Espera = 0)
 
 if (Test-Path $Ruta) { "YA EXISTE (no se sobrescribe): $Ruta"; exit 1 }
 $dir = Split-Path $Ruta
@@ -14,7 +17,7 @@ if (-not (Test-Path $dir)) { New-Item -ItemType Directory -Force $dir | Out-Null
 Add-Type -AssemblyName UIAutomationClient, UIAutomationTypes, System.Windows.Forms
 Add-Type @"
 using System; using System.Runtime.InteropServices;
-public class KitW { [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr h); }
+public class KitW { [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr h); [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr h, int n); }
 "@ -ErrorAction SilentlyContinue
 $A = [System.Windows.Automation.AutomationElement]; $C = [System.Windows.Automation.TreeScope]
 function P($prop, $val) { New-Object System.Windows.Automation.PropertyCondition($prop, $val) }
@@ -24,6 +27,7 @@ $proc = Get-Process RobloxStudioBeta -ErrorAction SilentlyContinue |
     Select-Object -First 1
 if (-not $proc) { "ERROR: no encontre una ventana de Roblox Studio con un lugar abierto"; exit 1 }
 $root = $A::FromHandle($proc.MainWindowHandle)
+if ($Espera -gt 0) { [KitW]::ShowWindow($proc.MainWindowHandle, 9) | Out-Null; [KitW]::SetForegroundWindow($proc.MainWindowHandle) | Out-Null; Start-Sleep -Seconds $Espera }
 
 $dlg = $root.FindFirst($C::Children, (P $A::ClassNameProperty '#32770'))
 if (-not $dlg) {

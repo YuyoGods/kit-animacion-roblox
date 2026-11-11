@@ -25,3 +25,4 @@
 - Brillo (glare) en el compositor para ojos que brillan, luna y faroles (hoy Eevee no da halo).
 - Llevar a `Herramientas/` las piezas de `EP002/scripts/animar_bloque1.py` que sirven en cualquier episodio: cinemática directa sin depsgraph (`Pj`, `resolver_mano`), `paso()` (caminar con parámetros), `mirar()`, burbujas que miran a la cámara, panes/objetos con vuelo balístico.
 
+- **Pueblo_v2: arreglar la fuente y la puerta de la presidencia en el mapa** (EP006): el agua de la pileta (`Fuente_Agua`) quedo debajo de la tapa de piedra (subirla 0,28 o quitar la tapa) y la entrada de la presidencia no tiene hoja de puerta. En EP006 se arreglo solo en el archivo del episodio (`scripts/utileria.py`). Hacerlo en una copia del mapa (`Escenarios/Pueblo_v3/`) para no tocar el original.

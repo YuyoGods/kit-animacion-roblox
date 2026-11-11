@@ -1,7 +1,8 @@
 # Arma el video: la voz completa de corrido (las tomas ya siguen a la voz, ver tomas_desde_voz.py) + pocos efectos
-# debajo de la voz, cada uno justo cuando pasa algo en la escena + subtitulos automaticos de 1-2 palabras -> MP4.
+# debajo de la voz, cada uno justo cuando pasa algo en la escena + subtitulos automaticos de 1-2 palabras
+# + la musica de fondo del canal de principio a fin (mi_config.json -> musica_fondo; Herramientas/audio/musica_fondo.py) -> MP4.
 # PLANTILLA: copiar a EP###/scripts/armar_video.py y editar AMBIENTES, EFECTOS y CLAVE para el episodio.
-# Uso: py Episodios/EP###_Titulo/scripts/armar_video.py EP###_Titulo [preview|final]
+# Uso: py Episodios/EP###_Titulo/scripts/armar_video.py EP###_Titulo [preview|final] [--solo-audio]
 # Lee:  audio/tomas_voz.json + la voz (audio/voz.wav si se recorto con recortar_pausas.py, si no audio/narracion.mp3)
 #       renders/<modo>/fotogramas/c_0001.png ...
 # Deja: renders/<modo>/EP###_Titulo_<modo>.mp4  (+ subtitulos.ass, mezcla_final.wav, tiempos_finales.json en audio/)
@@ -20,7 +21,9 @@ def _raiz():
 
 
 sys.path.insert(0, os.path.join(_raiz(), "Herramientas"))
+sys.path.insert(0, os.path.join(_raiz(), "Herramientas", "audio"))
 from config import SFX, episodio  # noqa: E402
+import musica_fondo  # noqa: E402
 
 # ======================= EDITAR POR EPISODIO =======================
 # Sonido de fondo en bucle, muy bajito (toma_desde, toma_hasta, categoria, numero, volumen_dB)
@@ -28,8 +31,14 @@ AMBIENTES = [
     # (1, 4, "wind", 2, -30),            # exterior de dia
     # (5, 5, "night_ambience", 3, -21),  # noche
 ]
-# Golpes: (cuando, categoria, numero, volumen_dB). cuando = segundos, "palabra:pum" (cae con esa palabra de la voz;
-# "palabra:pum:2" = la segunda vez que la dice) o "toma:3" (al empezar la toma 3). Pocos y con sentido.
+# Golpes: (cuando, categoria, numero, volumen_dB[, corte]). cuando = segundos, "palabra:pum" (cae con esa palabra de la
+# voz; "palabra:pum:2" = la segunda vez que la dice) o "toma:3" (al empezar la toma 3). Pocos y con sentido.
+# REGLA (pedido del usuario 2026-11-11, "muy importante"): cada efecto suena SOLO mientras pasa su accion en pantalla.
+# Muchos clips de la libreria duran 5-6 s (typing, tick, reverse_swell, sub_drop): se cortan solos (con fade corto) al
+# terminar la toma donde empiezan, y el 5o dato los acorta mas: segundos (0.6) o "hasta:palabra:una".
+# Los sonidos que salen de la animacion (ej. el tecleo de una burbuja) van en audio/efectos_animacion.json:
+# [{"tipo": "tecleo", "f0": cuadro_primera_letra, "f1": cuadro_ultima_letra + 3}] -> suenan solo en ese tramo.
+TECLEO = ("typing", -16)
 EFECTOS = [
     # ("palabra:pum", "pop", 5, -3),
     # ("toma:6", "whoosh", 2, -16),
@@ -39,7 +48,8 @@ CALLAR = set()       # palabras que la voz dice pero que mejor hace el EFECTO (o
                      # en ingles, ej. {"dong"}): se silencian en la voz y no salen en subtitulos
 # ===================================================================
 
-_args = [a for a in sys.argv[1:] if a not in ("preview", "final")]
+SOLO_AUDIO = "--solo-audio" in sys.argv[1:]      # solo la mezcla (voz + efectos + musica) para escucharla, sin video
+_args = [a for a in sys.argv[1:] if a not in ("preview", "final", "--solo-audio")]
 if not _args:
     sys.exit("Uso: py armar_video.py EP###_Titulo [preview|final]")
 EP = _args[0]
@@ -48,6 +58,9 @@ ROOT = episodio(EP)
 AUD = os.path.join(ROOT, "audio")
 FRAMES = os.path.join(ROOT, "renders", MODE, "fotogramas")
 OUT_MP4 = os.path.join(ROOT, "renders", MODE, "%s_%s.mp4" % (EP, MODE))
+if not SOLO_AUDIO and not os.path.exists(os.path.join(FRAMES, "c_0001.png")):
+    import limpiar_episodio      # episodio ya limpio: los PNG quedaron en fotogramas/fotogramas.mp4 -> sacarlos
+    limpiar_episodio.restaurar(FRAMES)
 if not SFX or not os.path.isdir(SFX):
     sys.exit("Falta la carpeta de efectos: poner la ruta en \"sfx\" de mi_config.json")
 SR = 48000
@@ -91,10 +104,10 @@ def db(x):
 
 def place(track, clip, t, gain_db=0.0, fade_in=0.0, fade_out=0.0):
     c = clip * db(gain_db)
-    if fade_in:
-        n = min(len(c), int(fade_in * SR)); c[:n] *= np.linspace(0, 1, n)
+    if fade_in:                                            # curvas suaves (seno): sin clic ni golpe al entrar/salir
+        n = min(len(c), int(fade_in * SR)); c[:n] *= np.sin(np.linspace(0, np.pi / 2, n))
     if fade_out:
-        n = min(len(c), int(fade_out * SR)); c[-n:] *= np.linspace(1, 0, n)
+        n = min(len(c), int(fade_out * SR)); c[-n:] *= np.cos(np.linspace(0, np.pi / 2, n))
     i = int(t * SR)
     if i >= len(track):
         return
@@ -117,25 +130,65 @@ fx = np.zeros(N, np.float32)
 for t0, t1, cat, n, g in AMBIENTES:
     a, b = TOMA[t0][0], TOMA[t1][1]
     c = sfx(cat, n); m = int((b - a) * SR)
-    place(fx, np.tile(c, int(np.ceil(m / len(c))) + 1)[:m].copy(), a, g, fade_in=0.2, fade_out=0.2)
-for c, cat, n, g in EFECTOS:
-    place(fx, sfx(cat, n), cuando(c), g, fade_out=0.05)
+    place(fx, np.tile(c, int(np.ceil(m / len(c))) + 1)[:m].copy(), a, g, fade_in=0.4, fade_out=0.5)
+def fin_de_toma(t):
+    for n_, (a_, b_) in TOMA.items():
+        if a_ - 1e-6 <= t < b_:
+            return b_
+    return DUR
+
+
+for e in EFECTOS:
+    c, cat, n, g = e[:4]
+    t = cuando(c)
+    fin = fin_de_toma(t)                                   # nunca pasa del corte de su toma
+    if len(e) > 4:
+        fin = min(fin, cuando(e[4][6:]) if isinstance(e[4], str) and e[4].startswith("hasta:") else t + float(e[4]))
+    entero = sfx(cat, n)
+    clip = entero[:max(1, int((fin - t) * SR))].copy()
+    largo = len(clip) / SR
+    # DESVANECIDO al final (pedido del usuario 2026-11-11): si el efecto se recorto (por el corte de la toma o su 5o dato)
+    # se apaga suave en su ultimo tramo (0,15-0,6 s) y termina ANTES del corte: no se oye "cortado" al cambiar de escena.
+    recortado = len(clip) < len(entero)
+    fo = min(0.6, max(0.15, largo * 0.4)) if recortado else min(0.25, max(0.04, largo * 0.15))
+    place(fx, clip, t, g, fade_in=0.01, fade_out=min(fo, largo * 0.7))
+    print("  efecto %-14s %6.2f -> %6.2f s" % (cat, t, t + len(clip) / SR))
+_ev = os.path.join(AUD, "efectos_animacion.json")
+for k, e in enumerate(json.load(open(_ev, encoding="utf-8")) if os.path.exists(_ev) else []):
+    if e["tipo"] == "tecleo":                              # tecleo: solo mientras salen las letras de esa burbuja
+        t0, t1 = (e["f0"] - 1) / FPS, (e["f1"] - 1) / FPS
+        clip = sfx(TECLEO[0], 1 + k % 2)[:max(1, int((t1 - t0) * SR))].copy()
+        place(fx, clip, t0, TECLEO[1], fade_in=0.01, fade_out=0.05)
+        print("  efecto %-14s %6.2f -> %6.2f s (tecleo de %s)" % (TECLEO[0], t0, t1, e.get("burbuja", "")))
 
 # ================= MEZCLA =================
 env = np.convolve(np.abs(voz), np.ones(2400) / 2400, mode="same")
 duck = np.clip(1.0 - env * 6.0, 0.55, 1.0)                 # bajar efectos cuando habla la voz
-mix = (voz * db(-1.0) + fx * duck)[:int(DUR * SR)]
+mus = musica_fondo.pista(voz, DUR, SR, load)              # musica de fondo de principio a fin (mi_config.json), bajo la voz
+mix = (voz * db(-1.0) + fx * duck + (mus if mus is not None else 0))[:int(DUR * SR)]
 mix = mix / (np.max(np.abs(mix)) or 1) * 0.89
 tmp = os.path.join(AUD, "mezcla_tmp.wav")
 subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "f32le", "-ar", str(SR), "-ac", "1", "-i", "-", tmp], input=mix.astype(np.float32).tobytes(), check=True)
 final_wav = os.path.join(AUD, "mezcla_final.wav")
-subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", tmp, "-af", "loudnorm=I=-14:TP=-1.5:LRA=11", "-ar", str(SR), "-ac", "2", final_wav], check=True)
+# loudnorm en 2 pasadas y YA EN ESTEREO (medir y luego aplicar lineal). En una pasada, o midiendo en mono (3 dB mas
+# bajo: pedia tanta ganancia que se pasaba del pico y loudnorm se rendia), quedaba en -15,3 LUFS (EP006) y no en -14.
+_med = subprocess.run(["ffmpeg", "-hide_banner", "-i", tmp, "-af", "aformat=channel_layouts=stereo,loudnorm=I=-14:TP=-1.5:LRA=11:print_format=json", "-f", "null", "-"],
+                      capture_output=True, text=True).stderr
+_m = json.loads(_med[_med.rindex("{"):_med.rindex("}") + 1])
+_ln = ("aformat=channel_layouts=stereo,loudnorm=I=-14:TP=-1.5:LRA=11:measured_I=%s:measured_TP=%s:measured_LRA=%s:measured_thresh=%s:offset=%s:linear=true"
+       % (_m["input_i"], _m["input_tp"], _m["input_lra"], _m["input_thresh"], _m["target_offset"]))
+subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", tmp, "-af", _ln, "-ar", str(SR), "-ac", "2", final_wav], check=True)
 os.remove(tmp)
+if SOLO_AUDIO:
+    escuchar = os.path.join(AUD, "mezcla_escuchar.mp3")
+    subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", final_wav, "-c:a", "libmp3lame", "-b:a", "192k", escuchar], check=True)
+    print("MEZCLA LISTA (sin video):", escuchar)
+    sys.exit(0)
 
 # ================= SUBTITULOS automaticos (1-2 palabras, 1 linea) =================
 trozos, actual = [], []
 for p in VOZ["palabras"]:
-    if p["w"] in CALLAR:
+    if p["w"] in CALLAR or p.get("sfx"):                     # las marcas de efecto (quitar_onomatopeyas.py) no llevan subtitulo
         continue
     actual.append(p)
     corta = p["texto"][-1] in ",.:;!?\"»…" or p["texto"].endswith("...")

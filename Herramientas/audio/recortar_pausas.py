@@ -3,18 +3,19 @@
 #   1) Mide la energia del audio cada 10 ms y solo quita SILENCIO REAL: nunca un pedazo de palabra ni el final suave
 #      de una palabra. Cada corte queda dentro del silencio y lejos de la voz (lo comprueba antes de guardar).
 #   2) Deja pausas cortas y naturales (segundos):
-#        entre palabras ............... hasta --max (0,2)
-#        despues de coma .............. hasta --coma (0,3)
-#        fin de linea y . ! ? : ....... de 0,3 a --respiro (0,4)     <- un respiro corto entre tomas
-#        despues de "..." ............. de 0,41 a --suspenso (0,55)
+#        entre palabras ............... hasta --max (0,10)
+#        despues de coma .............. hasta --coma (0,12)
+#        fin de linea y . ! ? : ....... de 0,105 a --respiro (0,14)  <- respiro cortito: el narrador siempre activo
+#        despues de "..." ............. de 0,15 a --suspenso (0,2)
+#      (EP006, 2026-11-09: con 0,3-0,4 s entre lineas EP005 se sintio lento; el usuario eligio 0,14 s)
 #      Si la voz dice dos lineas pegadas pero baja casi a silencio entre ellas, ahi mete el respiro.
 #      Las pausas mas largas se acortan y las muy cortas de fin de frase se alargan un poco con su mismo silencio.
 #      La velocidad de la voz NO cambia.
 #   3) Volumen parejo: si una linea suena mucho mas suave o fuerte que las demas, la acerca (queda +-2 dB).
 #   4) Revisa la voz con revisar_voz.py: la "oye" con Whisper, la compara con narracion.txt y la mide; avisa con su
 #      segundo si una palabra no se oye completa, hay algo de mas, una linea va atropellada, etc.
-#   py Herramientas/audio/recortar_pausas.py EP###_Titulo [--audio su_voz.mp3] [--max 0.2] [--coma 0.3]
-#                                             [--respiro 0.4] [--suspenso 0.55] [--sin_oir]
+#   py Herramientas/audio/recortar_pausas.py EP###_Titulo [--audio su_voz.mp3] [--max 0.10] [--coma 0.12]
+#                                             [--respiro 0.14] [--suspenso 0.2] [--sin_oir]
 # Entrada: audio/narracion.mp3 + audio/narracion_tiempos.json (ElevenLabs), o --audio <archivo> (voz propia: los
 #          tiempos de cada palabra salen de Whisper; la primera vez descarga el modelo).
 # Salida: audio/voz.wav (la usa el video), audio/voz_escuchar.mp3 (para escucharla) y audio/voz_palabras.json
@@ -35,10 +36,10 @@ except Exception:
 ap = argparse.ArgumentParser(description="Recorta pausas sin cortar la voz y revisa que se oiga completa")
 ap.add_argument("ep")
 ap.add_argument("--audio", help="voz propia (cualquier formato); si no, audio/narracion.mp3 de ElevenLabs")
-ap.add_argument("--max", type=float, default=0.20, help="pausa maxima entre palabras (s)")
-ap.add_argument("--coma", type=float, default=0.30, help="pausa maxima despues de coma (s)")
-ap.add_argument("--respiro", type=float, default=0.40, help="pausa al final de linea o frase (s); minimo el 75%%")
-ap.add_argument("--suspenso", "--max_suspenso", dest="suspenso", type=float, default=0.55,
+ap.add_argument("--max", type=float, default=0.10, help="pausa maxima entre palabras (s)")
+ap.add_argument("--coma", type=float, default=0.12, help="pausa maxima despues de coma (s)")
+ap.add_argument("--respiro", type=float, default=0.14, help="pausa al final de linea o frase (s); minimo el 75%%")
+ap.add_argument("--suspenso", "--max_suspenso", dest="suspenso", type=float, default=0.20,
                 help="pausa despues de '...' (s); minimo el 75%%")
 ap.add_argument("--sin_oir", action="store_true", help="no revisar la voz con Whisper al final")
 ap.add_argument("--detalle", action="store_true", help="mostrar cada pausa (entre que palabras, antes y ahora)")

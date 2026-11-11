@@ -3,6 +3,34 @@
 > Una entrada por cada actualización que se sube al repositorio (lo más nuevo arriba).
 > Si una actualización renombra o mueve archivos compartidos, avisarlo aquí.
 
+## v0.6.0 — 2026-11-11 — Lo que el dueño revisa, Claude ya lo cumple solo
+Lo aprendido en EP006 a EP012. Ningún archivo compartido se renombró ni se movió.
+
+**Reglas nuevas para Claude** (`CLAUDE.md`, `docs/05`, `docs/06`, skills `nuevo-episodio` y `poner-rig`):
+- **Lista de lo que revisa el dueño en cada borrador** (`docs/05_CAMARAS_Y_TOMAS.md`): gancho sin huecos, nada quieto más de ~1 s, lo que se lanza se ve caer, nada tapa, caras (nunca la de fábrica), luz de noche, accesorios bien puestos, identidad de cada personaje, objetos chiquitos grandes y volumen. Claude la cumple antes de mandar el borrador.
+- **Zona segura de Shorts**: caras, burbujas y letreros centrados en x 6–86 %, y 12–70 % (abajo tapan el título y el botón de suscribirse). `Herramientas/blender/zona_segura.py` revisa y encuadra solo.
+- **Efectos de sonido que duran solo su acción** y se apagan suave antes del corte; pocos (uno por acción importante). Sin viento de día, sin aplausos ni multitud y sin ladridos (`docs/06`).
+- **El narrador no dice onomatopeyas** (¡pop!, ¡boing!): las pone el efecto. Si ya están en una voz aprobada, `Herramientas/audio/quitar_onomatopeyas.py` las quita sin gastar créditos.
+- **Recuerdos sin marco**: se cuentan como una toma normal.
+- **Al entregar la vista previa aprobada**, Claude pregunta: «¿Hago el render final o limpio los residuos?».
+- **Lecciones 80–112** en `docs/02_LECCIONES.md`: niños que se vean niños, letreros grandes, mundos enormes, fuego que parece fuego, ola gigante, corazones que nacen del personaje, postura en tabla de surf, vista previa más rápida con muchas luces, entre otras.
+
+**Herramientas nuevas**:
+- `Herramientas/audio/musica_fondo.py`: **música de fondo** de principio a fin, recortada al final del video y por debajo de la voz. Se configura en `mi_config.json` → `"musica_fondo"` y `"musica_fondo_db"` (nuevos en `mi_config.ejemplo.json`). La canción va en la carpeta personal `Musica/` (no se sube).
+- `Herramientas/limpiar_episodio.py`: libera 2–6 GB por episodio terminado (borra `borrador/`, `pruebas/` y los PNG, que quedan comprimidos en `fotogramas.mp4`). Primero hace un simulacro. `rehacer_tramo.py` y `armar_video.py` recuperan los PNG solos si hacen falta.
+- `Herramientas/blender/alturas.py`: niños más bajos que los adultos (adulto 5,1 · niño 4,0 · niño chico 3,45) sin que los pies patinen.
+- `Herramientas/blender/revisar_piel.py`: revisa y arregla la cabeza bronceada junto a manos claras (la skill `poner-rig` ya la corre).
+- `Herramientas/blender/rig_motor6d.py`: rig para modelos que no son R15 (ciervo, monstruos, animales) con sus animaciones de Studio.
+- **Animaciones de Roblox Studio a Blender**: `Herramientas/roblox/sacar_animacion.luau` + `Herramientas/blender/animacion_roblox.py` (bailes y emotes en cualquier rig R15). Se guardan en la carpeta personal `Personajes/Animaciones/`.
+- `Herramientas/audio/acortar_palabra.py`: acorta una palabra estirada de la voz sin gastar créditos.
+- `voz_elevenlabs.py --anteponer`: agrega un gancho nuevo al principio sin rehacer la voz aprobada. Modelo por defecto `eleven_v4`.
+- `armar_secuencia_caras.py --agregar`: caras nuevas al final sin cambiar los números que ya usan tus episodios.
+- `vfx.py`: fuego que parece fuego (`fuego_vivo`), corazones que nacen del personaje (`corazones_emisor`) y más. `objetos_cartoon.py`: muchos objetos nuevos (entre ellos `rayos_brillo`).
+- Exportar de Studio: personajes R6 se convierten a R15 (`_G.CL_r6a15`).
+- `PLANO.md` de la plantilla: cada cosa que se modela lleva su referencia de internet y se construye por lotes.
+
+**Carpetas personales nuevas** (git no las sube, solo su `LEEME.md`): `Musica/` y `Personajes/Animaciones/`.
+
 ## v0.5.0 — 2026-11-09 — Planear antes de animar (y nada tieso)
 **Cómo trabaja Claude un episodio ahora** (`CLAUDE.md`, skill `nuevo-episodio`, `docs/01_PIPELINE.md`). Es lo aprendido en EP004 y EP005 y en el entrenamiento con 172 videos:
 1. **Guion desde el título** con la estructura medida (`docs/08_HISTORIAS.md`):

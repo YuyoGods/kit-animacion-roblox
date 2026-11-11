@@ -82,6 +82,11 @@ def cabeza(rig, f):
     return rig.matrix_world @ rig.pose.bones["Head"].head
 
 
+def _k(rig):
+    """escala del personaje (los ninos van mas chicos: alturas.py): las distancias de camara se escalan con ella"""
+    return rig.matrix_world.to_scale().x
+
+
 def frente(rig, f):
     _sc().frame_set(f)
     return (rig.matrix_world.to_3x3() @ Vector((0, -1, 0))).normalized()
@@ -94,7 +99,8 @@ def visible(pos, rig, f):
     H = rig.matrix_world @ rig.pose.bones["Head"].head
     fr = (rig.matrix_world.to_3x3() @ Vector((0, -1, 0))).normalized()
     lat = Vector((-fr.y, fr.x, 0))
-    pts = [H + Vector((0, 0, 0.7)) + fr * 0.4 + lat * dx + Vector((0, 0, dz)) for dx, dz in ((0, 0), (0.3, 0), (-0.3, 0), (0, 0.3), (0, -0.3))]
+    k = _k(rig)
+    pts = [H + (Vector((0, 0, 0.7)) + fr * 0.4 + lat * dx + Vector((0, 0, dz))) * k for dx, dz in ((0, 0), (0.3, 0), (-0.3, 0), (0, 0.3), (0, -0.3))]
     ok = 0
     for p in pts:
         d = p - Vector(pos)
@@ -106,15 +112,15 @@ def visible(pos, rig, f):
 
 def plano(rig, f, tipo, lado=0.0):
     """camara de frente al personaje, un poco abajo de los ojos; prueba angulos y se queda con el que ve la cara completa"""
-    H = cabeza(rig, f); fr = frente(rig, f)
+    H = cabeza(rig, f); fr = frente(rig, f); k = _k(rig)
     mejor = None
     for extra in (0, 20, -20, 40, -40, 60, -60):
         g = math.radians(lado + extra)
         d = Vector((fr.x * math.cos(g) - fr.y * math.sin(g), fr.x * math.sin(g) + fr.y * math.cos(g), 0)).normalized()
         if tipo == "primer":
-            cand = (H + d * 4.2 + Vector((0, 0, 0.45)), H + Vector((0, 0, 0.75)), 34)
+            cand = (H + (d * 4.2 + Vector((0, 0, 0.45))) * k, H + Vector((0, 0, 0.75)) * k, 34)
         else:
-            cand = (H + d * 6.4 + Vector((0, 0, 0.2)), H + Vector((0, 0, 0.35)), 40)
+            cand = (H + (d * 6.4 + Vector((0, 0, 0.2))) * k, H + Vector((0, 0, 0.35)) * k, 40)
         v = visible(cand[0], rig, f)
         if mejor is None or v > mejor[0]:
             mejor = (v, cand)
@@ -128,16 +134,20 @@ def hombro(rig_foco, rig_otro, f):
     hs, hc = cabeza(rig_otro, f), cabeza(rig_foco, f)
     atras = hs - hc; atras.z = 0; atras.normalize()
     lat = Vector((-atras.y, atras.x, 0))
-    ops = [hs + atras * 3.2 + lat * s * 1.7 + Vector((0, 0, 0.8)) for s in (1, -1)]
-    return max(ops, key=lambda p: visible(p, rig_foco, f)), hc + Vector((0, 0, 0.45)), 38
+    ko, kf = _k(rig_otro), _k(rig_foco)
+    ops = [hs + (atras * 3.2 + lat * s * 1.7 + Vector((0, 0, 0.8))) * ko for s in (1, -1)]
+    return max(ops, key=lambda p: visible(p, rig_foco, f)), hc + Vector((0, 0, 0.45)) * kf, 38
 
 
 def camara(col, nombre, f0, f1, pos, mira, ang, acercar=0.06):
     cd = bpy.data.cameras.new(nombre); cd.sensor_fit = 'VERTICAL'; cd.clip_start = 0.1; cd.clip_end = 2000
     c = bpy.data.objects.new(nombre, cd); col.objects.link(c)
+    prev = None
     for f, u in ((f0, 0.0), (f1, 1.0)):                   # acercamiento lento y parejo: 2 llaves lineales
         p = Vector(pos).lerp(Vector(mira), acercar * u)
-        c.location = p; c.rotation_euler = (Vector(mira) - p).to_track_quat('-Z', 'Y').to_euler()
+        q = (Vector(mira) - p).to_track_quat('-Z', 'Y')    # rotacion compatible (de 180 a -180 grados no da la vuelta)
+        e = q.to_euler('XYZ', prev) if prev is not None else q.to_euler('XYZ')
+        c.location = p; c.rotation_euler = e; prev = e.copy()
         cd.angle_y = math.radians(ang)
         c.keyframe_insert("location", frame=f); c.keyframe_insert("rotation_euler", frame=f); cd.keyframe_insert("lens", frame=f)
     for fc in curvas(c):

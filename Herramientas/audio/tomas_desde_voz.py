@@ -43,7 +43,7 @@ def cuadro(t):                  # segundo -> fotograma (el fotograma 1 es el seg
 vp_path = os.path.join(AUD, "voz_palabras.json")
 if os.path.exists(vp_path):
     vp = json.load(open(vp_path, encoding="utf-8"))
-    pal = [dict(p, w=norm(p["texto"])) for p in vp["palabras"]]
+    pal = [dict(p, w=p.get("w") or norm(p["texto"])) for p in vp["palabras"]]
     audio = "voz.wav"
 else:
     al = json.load(open(os.path.join(AUD, "narracion_tiempos.json"), encoding="utf-8"))
@@ -61,6 +61,10 @@ else:
         i = j
     audio = "narracion.mp3"
 
+# ---- marcas de efecto (onomatopeyas que se quitaron de la voz con quitar_onomatopeyas.py): no se oyen ni van en el
+#      guion; solo marcan el momento del golpe (palabra(n, "clic") y "palabra:clic" en armar_video) y no llevan subtitulo
+MARCAS = [p for p in pal if p.get("sfx")]
+pal = [p for p in pal if not p.get("sfx")]
 # ---- emparejar las palabras del guion con las que se oyen (tolera palabras mal entendidas)
 guion = [(k, norm(w), w) for k, l in enumerate(lineas) for w in l.split() if norm(w)]
 
@@ -125,6 +129,12 @@ for j, p in enumerate(pal):
     toma = next((t["n"] for t in reversed(tomas) if ini_linea[t["n"] - 1] <= j), 1)
     palabras.append({"w": p["w"], "texto": p["texto"], "t0": round(p["t0"] + INICIO, 3), "t1": round(p["t1"] + INICIO, 3),
                      "f": cuadro(p["t0"] + INICIO), "toma": toma})
+for p in MARCAS:
+    t = p["t0"] + INICIO
+    toma = next((tm["n"] for tm in reversed(tomas) if tm["voz_ini"] <= t + 1e-6), 1)
+    palabras.append({"w": p["w"], "texto": p["texto"], "t0": round(t, 3), "t1": round(p["t1"] + INICIO, 3),
+                     "f": cuadro(t), "toma": toma, "sfx": True})
+palabras.sort(key=lambda p: p["t0"])
 salida = {"fps": FPS, "frames": tomas[-1]["f_fin"], "voz_inicio": INICIO, "audio": audio, "tomas": tomas, "palabras": palabras}
 json.dump(salida, open(os.path.join(AUD, "tomas_voz.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
 huecos = [q["t0"] - p["t1"] for p, q in zip(pal, pal[1:])]

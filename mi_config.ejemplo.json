@@ -4,5 +4,7 @@
   "sfx": "",
   "fuente_subtitulos": "C:\\Windows\\Fonts\\ariblk.ttf",
   "voz_narrador": "",
-  "modelo_voz": "eleven_multilingual_v2"
+  "modelo_voz": "eleven_v4",
+  "musica_fondo": "",
+  "musica_fondo_db": -16
 }

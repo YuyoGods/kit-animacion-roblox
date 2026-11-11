@@ -1,6 +1,6 @@
 # Genera la narracion con ElevenLabs (con tiempos por letra para sincronizar subtitulos).
 # Uso: py voz_elevenlabs.py EP###_Nombre [archivo.txt] [--voz ID_DE_VOZ] [--velocidad X] [--linea N [--simular|--reusar]]
-#                                                                            [--agregar [--respuesta archivo.json]]
+#                                                                            [--agregar|--anteponer [--respuesta archivo.json]]
 #   Lee el texto de EP###/narracion.txt (lineas con # se ignoran) y guarda en EP###/audio/:
 #   narracion.mp3 + narracion_tiempos.json + narracion_info.json (voz y ajustes con que se hizo).
 #   Si ya habia una voz, la anterior se guarda en Respaldos/ (nada se pierde) y se usa la misma voz del episodio.
@@ -15,7 +15,10 @@
 #   --agregar: genera SOLO las lineas nuevas que agregaste al final de narracion.txt (ej. el bloque 2) y las pega
 #              despues de la voz que ya tienes (aprobada), con la misma voz y ajustes; ElevenLabs recibe las ultimas
 #              lineas como contexto para que suene igual. Gasta solo los creditos de las lineas nuevas.
-#   --respuesta archivo.json: con --agregar, usa una respuesta de ElevenLabs ya guardada (Respaldos/.../agregadas.json)
+#   --anteponer: lo mismo que --agregar pero con lineas nuevas al PRINCIPIO de narracion.txt (ej. un gancho de adelanto,
+#              EP011): las pide con las primeras lineas de la voz como contexto y las pega ANTES de la voz aprobada.
+#              Ojo: las tomas se recorren (tomas_desde_voz.py otra vez y re-animar).
+#   --respuesta archivo.json: con --agregar o --anteponer, usa una respuesta de ElevenLabs ya guardada (Respaldos/.../agregadas.json)
 #              en vez de pedirla otra vez (no gasta creditos; tambien sirve para probar).
 # GASTA CREDITOS de ElevenLabs: confirmar con el usuario antes de correrlo.
 # La clave se lee de la variable de entorno ELEVENLABS_API_KEY de Windows; nunca se imprime ni se guarda.
@@ -64,6 +67,7 @@ if LINEA:
 SIMULAR = bool(_opcion("--simular", con_valor=False))
 REUSAR = bool(_opcion("--reusar", con_valor=False))
 AGREGAR = bool(_opcion("--agregar", con_valor=False))
+ANTEPONER = bool(_opcion("--anteponer", con_valor=False))
 RESPUESTA = _opcion("--respuesta")
 if not _args:
     sys.exit("Uso: py voz_elevenlabs.py EP###_Nombre [archivo.txt] [--voz ID_DE_VOZ] [--linea N [--simular|--reusar]] "
@@ -111,10 +115,15 @@ def pedir(texto, voz, ajustes, antes=None, despues=None):
                                  headers={"xi-api-key": api_key(), "Content-Type": "application/json",
                                           "Accept": "application/json"})
     try:
-        with urllib.request.urlopen(req, timeout=120) as r:
+        with urllib.request.urlopen(req, timeout=180) as r:
             data = json.loads(r.read().decode("utf-8"))
     except urllib.error.HTTPError as e:
-        print("ERROR HTTP", e.code, e.read().decode("utf-8", "replace")[:500])
+        msg = e.read().decode("utf-8", "replace")
+        if e.code in (400, 422) and (antes or despues) and ("previous" in msg or "next" in msg):
+            # algunos modelos (eleven_v3/v4) no aceptan el contexto de antes/despues: se pide la linea sola
+            print("  (el modelo %s no acepta contexto de lineas vecinas: se pide sin el)" % MODELO_VOZ)
+            return pedir(texto, voz, ajustes)
+        print("ERROR HTTP", e.code, msg[:500])
         sys.exit(1)
     return base64.b64decode(data["audio_base64"]), (data.get("alignment") or data.get("normalized_alignment"))
 
@@ -133,7 +142,7 @@ def respaldar(motivo):
 
 
 # ------------------------------------------------------------------ voz completa
-if not LINEA and not AGREGAR:
+if not LINEA and not AGREGAR and not ANTEPONER:
     antes_info = json.load(open(INFO, encoding="utf-8")) if os.path.exists(INFO) else {}
     VOICE = VOZ_ELEGIDA or antes_info.get("voz") or VOZ_NARRADOR     # rehacer un episodio = misma voz
     if not VOICE:
@@ -285,6 +294,85 @@ if AGREGAR:
     json.dump(info, open(INFO, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
     print("ok | %d lineas nuevas pegadas despues de %.2f s | volumen x%.2f (como el resto de la voz) | voz %.2f s -> %.2f s"
           % (len(nuevas), A2, ganancia, len(v) / SRL, len(salida) / SRL))
+    if previa:
+        print("  la voz anterior quedo en", previa)
+    print("Escuchala y despues: py Herramientas/audio/recortar_pausas.py", NOMBRE_EP)
+    sys.exit(0)
+
+# ------------------------------------------------------------------ anteponer lineas nuevas al PRINCIPIO
+if ANTEPONER:
+    if not (os.path.exists(MP3) and os.path.exists(TIEMPOS)):
+        sys.exit("Primero hace falta la voz (audio/narracion.mp3 + narracion_tiempos.json)")
+    info = json.load(open(INFO, encoding="utf-8")) if os.path.exists(INFO) else {}
+    VOICE = VOZ_ELEGIDA or info.get("voz") or VOZ_NARRADOR
+    if not VOICE:
+        sys.exit("Falta la voz: pasa --voz ID_DE_LA_VOZ")
+    ajustes = info.get("ajustes") or AJUSTES
+    al = json.load(open(TIEMPOS, encoding="utf-8"))
+    ch = list(al["characters"])
+    st = list(al["character_start_times_seconds"])
+    en = list(al["character_end_times_seconds"])
+    viejo = "".join(ch)
+    k = next((k for k in range(0, len(LINEAS)) if " ".join(LINEAS[k:]) == viejo), None)
+    if k is None:
+        sys.exit("La voz actual no coincide con las ultimas lineas de narracion.txt (cambiaste alguna?).")
+    nuevas = LINEAS[:k]
+    if not nuevas:
+        sys.exit("No hay lineas nuevas al principio de narracion.txt: la voz ya las tiene todas")
+    texto = " ".join(nuevas)
+    print("Lineas nuevas al principio: 1 a %d (%d letras = unos %d creditos) | voz %s..."
+          % (k, len(texto), 0 if RESPUESTA else len(texto), VOICE[:6]))
+    if RESPUESTA:
+        r = json.load(open(RESPUESTA, encoding="utf-8"))
+        crudo, aln = base64.b64decode(r["audio_base64"]), r["alignment"]
+        if "".join(aln["characters"]) != texto:
+            sys.exit("La respuesta guardada no es del texto actual de las lineas nuevas")
+        print("  usando la respuesta guardada (sin gastar creditos):", RESPUESTA)
+    else:
+        crudo, aln = pedir(texto, VOICE, ajustes, None, " ".join(LINEAS[k:k + 3]))
+    v = decodificar(MP3)
+    db, son = energia(v)
+    tmp = os.path.join(OUT, "_nuevas.mp3")
+    open(tmp, "wb").write(crudo)
+    nuevo = decodificar(tmp)
+    os.remove(tmp)
+    db_n, son_n = energia(nuevo)
+    if not son_n.any():
+        sys.exit("ElevenLabs devolvio audio vacio")
+    k_fin_n = len(son_n) - int(np.argmax(son_n[::-1]))           # despues del ultimo sonido de lo nuevo
+    core = nuevo[:min(len(nuevo), int(round((k_fin_n * HOP + 0.08) * SRL)))].copy()
+    k_ini_v = int(np.argmax(son))                                 # primer sonido de la voz vieja
+    iB = max(0, int(round((k_ini_v * HOP - 0.03) * SRL)))
+    der = v[iB:].copy()
+    pausa = np.zeros(int(0.30 * SRL), np.float32)                 # respiro (recortar_pausas lo ajusta)
+    objetivo, nn = nivel(v), nivel(core)
+    ganancia = float(np.clip(objetivo / nn, 0.25, 4.0)) if objetivo and nn else 1.0
+    core *= ganancia
+    F = int(0.005 * SRL)
+    rampa = np.linspace(1.0, 0.0, F, dtype=np.float32)
+    if len(core) > F:
+        core[-F:] *= rampa
+    if len(der) > F:
+        der[:F] *= rampa[::-1]
+    salida = np.concatenate([core, pausa, der]).astype(np.float32)
+    fin_nuevo = len(core) / SRL
+    d = fin_nuevo + len(pausa) / SRL - iB / SRL                   # cuanto se recorre la voz vieja
+    tiempos2 = {"characters": list(aln["characters"]) + [" "] + ch,
+                "character_start_times_seconds": [round(min(x, fin_nuevo), 3) for x in aln["character_start_times_seconds"]]
+                + [round(fin_nuevo, 3)] + [round(max(x + d, fin_nuevo), 3) for x in st],
+                "character_end_times_seconds": [round(min(x, fin_nuevo), 3) for x in aln["character_end_times_seconds"]]
+                + [round(fin_nuevo + len(pausa) / SRL, 3)] + [round(max(x + d, fin_nuevo), 3) for x in en]}
+    previa = respaldar("antes_anteponer")
+    if previa and not RESPUESTA:
+        json.dump({"texto": texto, "audio_base64": base64.b64encode(crudo).decode("ascii"), "alignment": aln},
+                  open(os.path.join(previa, "antepuestas.json"), "w", encoding="utf-8"), ensure_ascii=False)
+    subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "f32le", "-ar", str(SRL), "-ac", "1", "-i", "-",
+                    "-c:a", "libmp3lame", "-b:a", "192k", MP3], input=salida.tobytes(), check=True)
+    json.dump(tiempos2, open(TIEMPOS, "w", encoding="utf-8"), ensure_ascii=False)
+    info.update({"voz": VOICE, "modelo": MODELO_VOZ, "ajustes": ajustes, "lineas": LINEAS})
+    json.dump(info, open(INFO, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+    print("ok | %d lineas nuevas pegadas al principio (%.2f s) | volumen x%.2f | voz %.2f s -> %.2f s"
+          % (len(nuevas), fin_nuevo, ganancia, len(v) / SRL, len(salida) / SRL))
     if previa:
         print("  la voz anterior quedo en", previa)
     print("Escuchala y despues: py Herramientas/audio/recortar_pausas.py", NOMBRE_EP)

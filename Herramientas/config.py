@@ -18,7 +18,9 @@ _DEF = {
     "sfx": "",
     "fuente_subtitulos": r"C:\Windows\Fonts\ariblk.ttf",
     "voz_narrador": "",
-    "modelo_voz": "eleven_multilingual_v2",
+    "modelo_voz": "eleven_v4",
+    "musica_fondo": "",          # cancion de fondo (ruta o relativa a la raiz, ej. Musica/cancion.mp3); vacio = sin musica
+    "musica_fondo_db": -16,      # dB por debajo de la voz
 }
 _cfg_path = os.path.join(RAIZ, "mi_config.json")
 CFG = dict(_DEF)
@@ -31,6 +33,9 @@ SFX = CFG["sfx"]
 FUENTE_SUBTITULOS = CFG["fuente_subtitulos"]
 VOZ_NARRADOR = CFG["voz_narrador"]
 MODELO_VOZ = CFG["modelo_voz"]
+MUSICA_FONDO = CFG["musica_fondo"] and (CFG["musica_fondo"] if os.path.isabs(CFG["musica_fondo"])
+                                         else os.path.join(RAIZ, CFG["musica_fondo"]))
+MUSICA_FONDO_DB = float(CFG["musica_fondo_db"])
 CARAS = os.path.join(RAIZ, "Caras")                      # PNG por emocion: feliz.png, enojado.png...
 
 # formato estandar

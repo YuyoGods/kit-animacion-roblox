@@ -12,5 +12,6 @@ Seguir **directo y sin explicaciones largas** la *Receta* de `docs/03_PERSONAJES
 2. Si hay un rig anterior (`<Nombre>_R15_Rig.blend`), moverlo a `Respaldos/` antes de seguir.
 3. Correr el rig automático: `blender -b --factory-startup --python Herramientas/blender/armar_rig_r15_auto.py -- "<carpeta>" <Nombre>` (centra, voltea si hace falta, reconoce piezas y accesorios). Revisar el mapa que imprime. Si falla, usar la plantilla manual (`armar_rig_r15_plantilla.py`).
 4. Revisar las fotos de `previews/` (nada separado, nada flotando, materiales conectados). Corregir si hace falta.
+   - **Examinar la piel** (pedido del usuario, 2026-11-09): `blender -b "<carpeta>/<Nombre>_R15_Rig.blend" --python Herramientas/blender/revisar_piel.py`. Debe decir **OK**: la cabeza y las manos tienen el mismo tono. Si dice `SE ARREGLA`, correrlo con `-- --arreglar`. Si dice `REVISAR`, el personaje trae tonos distintos de fábrica: avisarle al usuario con una foto y proponerle igualarlos (`objetos_cartoon.igualar_piel`).
 5. **No borrar** lo que subió el usuario. Si ya había un `<Nombre>_R15_Rig.blend`, moverlo a `Respaldos/` antes.
 6. Anotar en `MI_CANAL.md` (reparto y detalle) y responder: *"Listo: <Nombre> ya tiene rig → `<ruta>`"* + una foto.

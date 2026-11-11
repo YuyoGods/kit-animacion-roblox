@@ -30,6 +30,17 @@
 2. Hoja de contacto: fotos de inicio/mitad/fin de cada toma a 22 % (`hoja_contacto.py` + `componer_hoja.py`) → revisar a ojo.
 3. Solo con **0 obstrucciones** se renderiza.
 
+## Zona segura de Shorts (pedido del usuario en EP010, 2026-11-11): revisarla ANTES de entregar
+En YouTube Shorts, abajo tapan el título, el canal y "suscribirse"; a la derecha están los botones y arriba la barra.
+- **Zona segura** (x de izquierda a derecha, y desde arriba): x 6–86 %, y 12–70 %. Caras, burbujas, letreros y el objeto del que se habla van **centrados** ahí, con margen. Si todo queda abajo y sobra cielo arriba, se sube y se agranda.
+- **Encuadre automático**: `Herramientas/blender/zona_segura.py` → `encuadrar(puntos, direccion, elev, ang, centro, llenar, zona)`. Los puntos son `puntos_cabeza(rig, f)` y `puntos_objeto(burbuja, f)`, y la función devuelve dónde poner la cámara y hacia dónde mirar para que queden centrados. Las burbujas que giran hacia la cámara se miden ya volteadas. Desde abajo (`elev` negativo), la cámara no debe quedar bajo el pasto.
+- **Revisión**: `zona_segura.revisar(f, camara, rigs, objetos)` en 3 momentos de cada toma y al inicio de cada sub-cámara (EP010: `scripts/revisar_zona.py -- 1 14`). Luego **mirar la hoja de fotos**. Solo se aceptan avisos a propósito, como algo enorme arriba del sujeto (ola, rayo, lluvia).
+- **Corregir una cámara ya hecha** (lección 108): `zona_segura.reencuadrar(camara, [f0, fm, f1], rigs, objetos)`. Gira poquito y, si no caben, abre el lente en vez de alejarla (alejarla la metía en paredes). Luego volver a revisar los tapados y ver las hojas.
+- **La acción pasa a otra persona** (el rayo elige a otro): la cámara **sigue la acción** (el rayo viaja encendido y la cámara lo acompaña) y **termina de frente y grande** en la nueva persona.
+- **Algo que cae del cielo sobre alguien**: la cámara llega antes de que caiga, se ve bajar completo hasta la persona y después se aclara para que se vea su cara.
+- **Sujeto importante** (el gato gigante): enseñarlo **de frente** y también de lado.
+- **Texto casi en la orilla**: alejar un poco la cámara para que se lea completo y con aire.
+
 ## Calidad de cada toma (pedido del usuario en EP003, 2026-11-07)
 **El storyboard (Three.js) es rápido y sencillo**: sirve para decidir si la historia y las tomas gustan; no se le exige esta calidad. **Esta lista la cumple Blender** al animar y al poner efectos (el script de animación de cada episodio y `revisar_camaras.py`), toma por toma, antes de renderizar. Nada realista: estilo Roblox, pero sin verse básico.
 1. **Comer y agarrar de verdad**: el objeto va a la boca al morder (con migas que caen y sonido) y se achica por mordida; lo que se agarra queda en la palma o en el asa, no flotando junto a la mano. Si "sostiene" algo, verlo en la foto y comprobar que sí lo tiene (`revisar_agarre.py`). Y que **se vea y se distinga**: de frente a la cámara (no de canto), grande, fuera de la franja de los subtítulos y de un color que contraste con la mano o la ropa (papel crema sobre guante blanco, no blanco sobre blanco). Comprobarlo con `revisar_objetos.py` (`render=True`).
@@ -53,10 +64,23 @@
 - **Por toma**: animación, render y sonido se trabajan por toma (una línea = una cámara); se rehace solo la toma que no gustó (`rehacer_tramo.py EP### --toma N`). Al final se juntan en un solo video editable antes de exportar.
 - **Cámara de frente**: en cada toma se ve la cara, la expresión y la acción de quien se habla; la cámara no se queda en la espalda (solo un instante en transiciones). Si camina y la escena lo pide, seguimiento tipo dron bien encuadrado. Movimiento con sentido, nunca totalmente quieta.
 - **Escala con espacio**: cabinas, bancas, mesas e interiores un poco más grandes que lo real: dos personajes caben con espacio y nada les tapa la cabeza.
-- **Efectos con criterio**: el efecto que mejora cada toma (migas, brillitos, corazones delgados, confeti, polvo…), corto y sin tapar la cara más de un instante (`Herramientas/blender/vfx.py`). Burbujas de pensamiento: imagen 2D ilustrada con el dibujo centrado.
+- **Efectos con criterio**: el efecto que mejora cada toma (migas, brillitos, corazones, confeti, polvo…), corto y sin tapar la cara más de un instante (`Herramientas/blender/vfx.py`). Burbujas de pensamiento: imagen 2D ilustrada con el dibujo centrado.
 - **Noche suave**: un poco luminosa para que no se vea tan oscura (salvo que la escena pida oscuro).
 - **Textos para celular**: papelitos y letreros grandes y en negritas.
 - **Comprobar**: foto de prueba de cada cambio (encuadre, centrado, que no tape) antes de seguir.
+
+## Lo que el usuario revisa en cada borrador (EP006, 2026-11-09): cumplirlo ANTES de mandárselo
+> El usuario pidió que estas reglas se apliquen solas en cada episodio, sin que tenga que señalarlas. Revisar el borrador con esta lista (fotos cada 0,5 s en los primeros 8 s y fotos de cada toma con su cámara real, `fotos_cuadros.py`).
+1. **Gancho sin huecos (0–8 s)**: cada segundo tiene acción que ilustra lo que dice la voz, con 2–3 cortes por frase. Si alguien desaparece («¡puf!»), **nunca cortar a un lugar vacío**: mostrar cómo pasa (la fuente lo jala, vuela, cae al agua con chapoteo) y cerrar con un objeto que cuente el final («nunca vuelve» = solo queda flotando la moneda). En EP006 los segundos 3–6 eran piso vacío y el usuario lo marcó.
+2. **Ninguna toma con más de ~1 s sin que pase algo**: ni piso vacío ni la cámara viendo la nada mientras habla la voz.
+3. **Lo que se lanza se ve caer**: de espaldas → de frente cuando lo avienta → corte rápido al lugar donde cae (agua con chapoteo). El destino tiene que verse (en la fuente, entre la cascada y la orilla; detrás de la cascada no se ve).
+4. **Nada tapa**: gente de la fiesta, postes, cascada, muebles. Revisar con la cámara real de cada toma.
+5. **Caras**: nunca la de fábrica (la cara 15 parece de fábrica: usar 16 u 8). Los extras también reaccionan: nadie sonriendo al fondo cuando pasa algo malo.
+6. **Luz de noche sin deslumbrar**: trajes claros, letreros y caras no se queman.
+7. **Accesorios bien puestos** (banda, sombrero, bigote): medidos en ejes del rig (lecciones 86–87), foto de cerca en varias tomas, y el ala del sombrero no tapa la cara (cámara de frente o un poco abajo).
+8. **Cada personaje con su identidad**: el presidente con sombrero de copa, bigote de una pieza y banda; los objetos de un personaje con SU modelo y colores (el peluche azul de la hermana, no uno genérico).
+9. **Objetos chiquitos que importan** (monedas, llaves): grandes, brillando y de frente para que se lean a 540×960.
+10. **Volumen** a −14 LUFS (`armar_video.py` lo ajusta en 2 pasadas).
 
 ## Recetas vistas en Custerk y Gelo (investigación nocturna, 2026-11-08)
 > Vistas por fotogramas, con video y segundo (detalle en `Analizador/Estilos/Custerk_notas.md` y `Gelo_notas.md`). Son **propuestas** para nuestras historias hasta que el usuario opine; las marcadas [2+] se vieron en 2 o más videos.

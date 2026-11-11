@@ -5,6 +5,7 @@
 #   vfx.migas("Migas_T03", col, (x, y, z), f0)                 # al romper la galleta: migajas que saltan y caen
 #   vfx.migas_mordida("Migas_T05", col, borde, f_mordida, f_mastica)  # al MORDER: migas que caen de la boca (2 tandas)
 #   vfx.fuego_caricatura("Fuego_T09", col, (x, y, z), f0, f1, ancho, alto, camara)  # muro de llamas planas (+ humo_negro)
+#   vfx.fuego_vivo("Fuego_T04", col, (x, y, z), f0, f1, tam)   # fuego con volumen que SI parece fuego (de cerca, en manos)
 #   vfx.brillitos("Brillo_T03", col, (x, y, z), f0)            # destellos de 4 puntas que aparecen y se apagan
 #   vfx.corazones("Cora_T40", col, (x, y, z), f0, n=5)         # corazones de linea delgada que suben (romance)
 #   vfx.confeti("Confeti_T44", col, (x, y, z), f0)             # papelitos de colores que caen girando
@@ -320,15 +321,171 @@ def _curva_corazon(nombre, tam, grosor):
     return cu
 
 
-def corazones(nombre, col, pos, f0, n=5, color="#ff4f8b", tam=1.0, ancho=1.6, camara=None, semilla=7, relleno=False):
-    """corazones de LINEA DELGADA (con brillo) que salen con un pop, suben meciendose y se desvanecen (~1 s).
-    Se ven bien sin tapar: grosor fino, nucleo blanco y halo de color. relleno=True agrega un relleno suave."""
+def _contorno_corazon(n_arco=22):
+    """CORAZON DE TODA LA VIDA (como el emoji): dos lobulos redondos y la punta abajo, con lineas rectas de los lobulos
+    a la punta. Medidas: ~2 de ancho, ~1,9 de alto, centrado."""
+    r, a, b, punta = 0.52, 0.44, 0.28, -0.98
+    T = (0.0, punta)
+    C = (-a, b)
+    dx, dy = C[0] - T[0], C[1] - T[1]
+    L = math.hypot(dx, dy)
+    th = math.atan2(dy, dx) + math.asin(r / L)              # tangente por fuera del lobulo izquierdo
+    lt = math.sqrt(L * L - r * r)
+    P = (T[0] + lt * math.cos(th), T[1] + lt * math.sin(th))
+    D = (0.0, b + math.sqrt(max(0.0, r * r - a * a)))       # la "V" de arriba, entre los dos lobulos
+    psi_p = math.atan2(P[1] - C[1], P[0] - C[0])
+    psi_d = math.atan2(D[1] - C[1], D[0] - C[0])
+    if psi_p < psi_d:
+        psi_p += 2 * math.pi
+    izq = [(C[0] + r * math.cos(psi_p + (psi_d - psi_p) * k / n_arco), C[1] + r * math.sin(psi_p + (psi_d - psi_p) * k / n_arco))
+           for k in range(n_arco + 1)]
+    der = [(-x, y) for (x, y) in reversed(izq)]
+    pts = [T] + izq + der[1:]
+    cy = (max(y for _, y in pts) + min(y for _, y in pts)) / 2
+    return [(x, y - cy) for x, y in pts]
+
+
+def _mat_corazon(nombre, color, emit, rough):
+    """material del corazon: color lleno (sin transparencia) que se DESVANECE solo al final, con la propiedad "alfa" de
+    cada objeto (1 = lleno)."""
+    m = bpy.data.materials.get(nombre)
+    if m:
+        return m
+    m = _mat(nombre, color, emit, rough)
+    nt = m.node_tree
+    bs = next(n for n in nt.nodes if n.type == 'BSDF_PRINCIPLED')
+    at = nt.nodes.new("ShaderNodeAttribute"); at.attribute_type = 'OBJECT'; at.attribute_name = "alfa"
+    nt.links.new(at.outputs["Fac"], bs.inputs["Alpha"])
+    m.surface_render_method = 'DITHERED'
+    return m
+
+
+def _corazon_solido(nombre, col, color, borde="#b0124f"):
+    """corazon LLENO de forma clasica: rosa por dentro, sin hueco, con un poquito de grosor y orilla redondeada, orilla
+    rosa oscuro detras y un brillito blanco en el lobulo izquierdo. Mira a +Z (se gira a la camara)."""
+    contorno = _contorno_corazon()
+
+    def curva(nom, esc, mat_, extr, bisel):
+        cu = bpy.data.curves.new(nom, 'CURVE'); cu.dimensions = '2D'; cu.fill_mode = 'BOTH'
+        cu.extrude = extr; cu.bevel_depth = bisel; cu.bevel_resolution = 3
+        sp = cu.splines.new('POLY'); sp.points.add(len(contorno) - 1)
+        for pt, (x, y) in zip(sp.points, contorno):
+            pt.co = (x * esc, y * esc, 0, 1)
+        sp.use_cyclic_u = True
+        cu.materials.append(mat_)
+        o = bpy.data.objects.new(nom, cu); col.objects.link(o)
+        return o
+    o = curva(nombre, 1.0, _mat_corazon("VFX_CorazonLleno_" + color.lstrip("#"), color, 0.45, 0.35), 0.05, 0.05)
+    b = curva(nombre + "_Orilla", 1.1, _mat_corazon("VFX_CorazonOrilla_" + borde.lstrip("#"), borde, 0.2, 0.5), 0.03, 0.03)
+    b.parent = o; b.location = (0, -0.01, -0.07)
+    me = bpy.data.meshes.new(nombre + "_Brillo"); bm = bmesh.new()
+    bmesh.ops.create_uvsphere(bm, u_segments=14, v_segments=6, radius=1.0); bm.to_mesh(me); bm.free()
+    me.materials.append(_mat_corazon("VFX_CorazonBrillo", "#ffffff", 1.2, 0.3))
+    br = bpy.data.objects.new(me.name, me); col.objects.link(br); br.parent = o
+    br.location = (-0.48, 0.38, 0.1); br.scale = (0.17, 0.09, 0.03); br.rotation_euler = (0, 0, 0.75)
+    for x in (o, b, br):
+        x.visible_shadow = False
+        x["alfa"] = 1.0
+    return o
+
+
+def _alfa(o, valor, f):
+    for x in [o] + list(o.children):
+        x["alfa"] = valor
+        x.keyframe_insert('["alfa"]', frame=f)
+
+
+def corazones_emisor(nombre, col, f0, f1, objetivo=None, hueso=None, offset=(0.0, 0.0, 0.0), pos=None, cada=6,
+                     tam=1.0, alto=3.2, ancho=1.0, vida=40, color="#ff3d7f", camara=None, semilla=7, detras=1.5):
+    """CORAZONES QUE NACEN DEL PERSONAJE (como en los juegos; pedido del usuario 2026-11-11): de f0 a f1 sale uno cada
+    'cada' cuadros desde el emisor (el hueso 'hueso' del rig 'objetivo', o el objeto 'objetivo', o el punto 'pos'),
+    con un saltito al nacer, sube meciendose 'alto' unidades, late un poco y se DESVANECE arriba. Siguen naciendo de
+    donde este el personaje en ese momento. offset = (x, y, z) del mundo desde el emisor.
+    detras: los corazones nacen esa distancia DETRAS del personaje (del lado contrario a la camara) y suben por los
+    lados y por arriba de su cabeza: nunca le tapan la cara (pedido del usuario 2026-11-11). 0 = enfrente, como antes."""
+    rnd = random.Random(semilla)
+    sc = bpy.context.scene
+    f_antes = sc.frame_current
+    cam = camara or sc.camera
+    derecha = cam.matrix_world.to_3x3() @ Vector((1, 0, 0)) if cam else Vector((1, 0, 0))
+    derecha.z = 0
+    derecha = derecha.normalized() if derecha.length > 1e-6 else Vector((1, 0, 0))
+    raiz = _raiz(nombre, col, (0, 0, 0))
+    i = 0
+    for t0 in range(f0, max(f0 + 1, f1), cada):
+        if objetivo is not None:
+            sc.frame_set(t0)
+            if hueso:
+                Mw = objetivo.matrix_world @ objetivo.pose.bones[hueso].matrix
+            else:
+                Mw = objetivo.matrix_world
+            p0 = Mw.translation + Vector(offset)
+        else:
+            p0 = Vector(pos) + Vector(offset)
+        if detras and cam is not None:
+            atras = p0 - cam.matrix_world.translation
+            atras.z = 0
+            if atras.length > 1e-6:
+                p0 = p0 + atras.normalized() * detras
+        o = _corazon_solido("%s_%02d" % (nombre, i), col, color); i += 1
+        o.parent = raiz
+        _mirar_camara(o, cam)
+        s = tam * rnd.uniform(0.7, 1.05)
+        # se abren a un lado y al otro (alternando): no tapan la cara del personaje
+        lado = (1 if i % 2 else -1) * rnd.uniform(0.55, 1.0) * ancho
+        fase = rnd.uniform(0, 2 * math.pi)
+        for k in range(0, vida + 1, 2):
+            t = k / vida
+            sube = alto * (1 - (1 - t) ** 1.6)                          # sale rapido y se frena arriba
+            mece = 0.28 * tam * math.sin(fase + t * 7.0) * min(1.0, t * 3)
+            o.location = p0 + derecha * (lado * t ** 0.6 + mece) + Vector((0, 0, sube))
+            if t < 0.1:
+                e = 1.25 * t / 0.1                                      # nace con un saltito
+            elif t < 0.18:
+                e = 1.25 - 0.25 * (t - 0.1) / 0.08
+            else:
+                e = 1.0 - 0.3 * max(0.0, t - 0.8) / 0.2                # se achica un poquito solo al final
+            e *= 1.0 + 0.07 * math.sin(t * 22)                          # late
+            o.scale = (s * e, s * e, s * e)
+            o.keyframe_insert("location", frame=t0 + k); o.keyframe_insert("scale", frame=t0 + k)
+        _alfa(o, 1.0, t0 + int(vida * 0.82)); _alfa(o, 0.0, t0 + vida)     # llenos casi todo el viaje
+        _visible(o, t0, t0 + vida); _constante(o)
+        for ch in o.children:
+            _visible(ch, t0, t0 + vida); _constante(ch)
+    sc.frame_set(f_antes)
+    return raiz
+
+
+def corazones(nombre, col, pos, f0, n=5, color="#ff4f8b", tam=1.0, ancho=1.6, camara=None, semilla=7, relleno=False,
+              estilo="solido"):
+    """corazones que salen con un pop, suben meciendose, laten y se desvanecen (~1 s).
+    estilo "solido" (por defecto desde 2026-11-11): corazones de forma CLASICA y LLENOS, rosas por dentro, sin hueco
+    (pedido del usuario), que se desvanecen al final. Para que NAZCAN DEL PERSONAJE una y otra vez: corazones_emisor. estilo "linea": el de antes (linea delgada con brillo; relleno=True le pone un
+    relleno suave)."""
     rnd = random.Random(semilla)
     raiz = _raiz(nombre, col, pos)
     m = _mat("VFX_Corazon_" + color.lstrip("#"), color, 8.0, 0.3)
     nucleo = _mat("VFX_Corazon_Nucleo", "#ffffff", 4.0, 0.3)
     for i in range(n):
         s = rnd.uniform(0.32, 0.5) * tam
+        if estilo == "solido":
+            o = _corazon_solido("%s_%02d" % (nombre, i), col, color); o.parent = raiz
+            _mirar_camara(o, camara)
+            x0 = rnd.uniform(-ancho / 2, ancho / 2)
+            fi = f0 + rnd.randint(0, 10); dur = rnd.randint(26, 34)
+            fase = rnd.uniform(0, 2 * math.pi)
+            for k in range(0, dur + 1, 3):
+                t = k / dur
+                o.location = (x0 + 0.25 * math.sin(fase + t * 5), 0, 1.8 * t)
+                esc = min(1.0, t / 0.18) * (1.0 if t < 0.7 else max(0.0, (1 - t) / 0.3))
+                esc *= 1.0 + 0.12 * math.sin(t * 18)
+                o.scale = (s * esc, s * esc, s * esc)
+                o.keyframe_insert("location", frame=fi + k); o.keyframe_insert("scale", frame=fi + k)
+            _alfa(o, 1.0, fi + int(dur * 0.82)); _alfa(o, 0.0, fi + dur)
+            _visible(o, fi, fi + dur); _constante(o)
+            for ch in o.children:
+                _visible(ch, fi, fi + dur); _constante(ch)
+            continue
         cu = _curva_corazon("%s_%02d" % (nombre, i), 1.0, 0.045)
         cu.materials.append(m)
         o = bpy.data.objects.new(cu.name, cu); col.objects.link(o); o.parent = raiz
@@ -565,3 +722,282 @@ def comer_con_tenedor(tenedor, cabeza, f0, f1, mordidas=2, comida=None, col=None
             comida.scale = esc_com * max(0.3, s_); comida.keyframe_insert("scale", frame=fr)
         if migas_en and col and n < mordidas and k == int(ciclo * 0.5):
             migas("EP5_MigasGato_%d" % n, col, tuple(migas_en), fr, n=10, tam=0.55, piso=migas_en[2] - 0.9, semilla=n + 4)
+
+
+# ------------------------------------------------------------------ EP006: chapoteo, lagrimas y agua dorada
+def chapoteo(nombre, col, pos, f0, n=26, tam=1.0, color="#d9f3ff", radio=1.0, semilla=13):
+    """CHAPOTEO de caricatura (cuando algo cae, se hunde o sale del agua): gotas que saltan en corona hacia arriba y
+    afuera, caen con gravedad hasta el agua y se apagan, mas un aro que se abre en la superficie (~0,8 s).
+    pos = punto en la superficie del agua (las gotas no bajan de ahi)."""
+    rnd = random.Random(semilla)
+    raiz = _raiz(nombre, col, pos)
+    m = _mat("VFX_Gota", color, 0.5, 0.15)
+    fps = bpy.context.scene.render.fps or 30
+    g = -34.0 * tam
+    for i in range(n):
+        me = bpy.data.meshes.new("%s_%02d" % (nombre, i))
+        bm = bmesh.new(); bmesh.ops.create_icosphere(bm, subdivisions=2, radius=1.0); bm.to_mesh(me); bm.free()
+        for pl in me.polygons:
+            pl.use_smooth = True
+        me.materials.append(m)
+        o = bpy.data.objects.new(me.name, me); col.objects.link(o); o.parent = raiz
+        a = 2 * math.pi * i / n + rnd.uniform(-0.25, 0.25)
+        r0 = radio * rnd.uniform(0.25, 0.9) * tam
+        vr, vz = rnd.uniform(1.4, 3.4) * tam, rnd.uniform(5.0, 9.5) * tam
+        s0 = rnd.uniform(0.07, 0.15) * tam
+        vida = int(2 * vz / -g * fps) + 1
+        for k in range(0, vida + 2, 2):
+            t = k / fps
+            z = vz * t + 0.5 * g * t * t
+            o.location = (math.cos(a) * (r0 + vr * t), math.sin(a) * (r0 + vr * t), max(0.0, z))
+            o.scale = (s0, s0, s0 * (1.6 if k < vida * 0.4 else 1.0)) if z > 0 or k == 0 else (0.0, 0.0, 0.0)
+            o.keyframe_insert("location", frame=f0 + k); o.keyframe_insert("scale", frame=f0 + k)
+        _visible(o, f0, f0 + vida + 2); _constante(o)
+    # aro en la superficie
+    me = bpy.data.meshes.new(nombre + "_Aro")
+    bm = bmesh.new()
+    seg = 32
+    vi = [bm.verts.new((0.8 * math.cos(2 * math.pi * k / seg), 0.8 * math.sin(2 * math.pi * k / seg), 0)) for k in range(seg)]
+    vo = [bm.verts.new((1.0 * math.cos(2 * math.pi * k / seg), 1.0 * math.sin(2 * math.pi * k / seg), 0)) for k in range(seg)]
+    for k in range(seg):
+        j = (k + 1) % seg
+        bm.faces.new((vi[k], vo[k], vo[j], vi[j]))
+    bm.to_mesh(me); bm.free()
+    me.materials.append(_mat("VFX_Aro_Agua", "#ffffff", 0.6, 0.2))
+    aro = bpy.data.objects.new(me.name, me); col.objects.link(aro); aro.parent = raiz; aro.location = (0, 0, 0.03)
+    for k, s in ((0, 0.4), (8, 1.6), (16, 2.6), (22, 3.0)):
+        aro.scale = (s * radio * tam, s * radio * tam, 1)
+        aro.keyframe_insert("scale", frame=f0 + k)
+    _visible(aro, f0, f0 + 22); _constante(aro)
+    return raiz
+
+
+def lagrimas(nombre, col, cabeza, f0, f1, cada=9, tam=1.0, color="#7fd0ff"):
+    """LAGRIMAS que salen de los dos ojos, bajan por la cara y caen (siguen a la cabeza). cabeza = malla de la cabeza
+    del personaje (ej. "Alex2641590_Head"). Una gota por ojo cada 'cada' cuadros entre f0 y f1."""
+    me = cabeza.data
+    xs = [v.co.x for v in me.vertices]; ys = [v.co.y for v in me.vertices]; zs = [v.co.z for v in me.vertices]
+    ancho, alto = max(xs) - min(xs), max(zs) - min(zs)
+    cx, frente = (max(xs) + min(xs)) / 2, min(ys) - 0.015
+    z_ojo, z_barba = min(zs) + 0.5 * alto, min(zs) + 0.1 * alto
+    raiz = bpy.data.objects.new(nombre, None); col.objects.link(raiz)
+    raiz.parent = cabeza; raiz.matrix_parent_inverse.identity(); raiz.location = (0, 0, 0)
+    m = _mat("VFX_Lagrima", color, 0.8, 0.1)
+    s = 0.055 * ancho * tam
+    i = 0
+    for t0 in range(f0, max(f0 + 1, f1 - 14), cada):
+        for lado in (-1, 1):
+            mm = bpy.data.meshes.new("%s_%02d" % (nombre, i)); i += 1
+            bm = bmesh.new(); bmesh.ops.create_uvsphere(bm, u_segments=10, v_segments=6, radius=1.0)
+            for v in bm.verts:                                     # gota: punta arriba
+                if v.co.z > 0:
+                    v.co.x *= (1 - v.co.z * 0.7); v.co.y *= (1 - v.co.z * 0.7); v.co.z *= 1.5
+            bm.to_mesh(mm); bm.free(); mm.materials.append(m)
+            o = bpy.data.objects.new(mm.name, mm); col.objects.link(o); o.parent = raiz
+            o.visible_shadow = False
+            x = cx + lado * 0.22 * ancho
+            for k, (zz, dy, sc_) in ((0, (z_ojo, 0.0, 0.6)), (10, (z_barba, 0.0, 1.0)), (16, (z_barba - 0.35 * alto, -0.1 * ancho, 0.0))):
+                o.location = (x + lado * 0.03 * ancho * k / 16, frente + dy, zz)
+                o.scale = (s * sc_, s * sc_ * 0.6, s * sc_)
+                o.keyframe_insert("location", frame=t0 + k); o.keyframe_insert("scale", frame=t0 + k)
+            _visible(o, t0, t0 + 16); _constante(o)
+    return raiz
+
+
+def dorar_materiales(nombres, tramos, color="#ffbf2e", fuerza=1.3, rampa=6, cuanto=0.55):
+    """AGUA DORADA (o cualquier material): en cada tramo [(f0, f1), ...] el material se vuelve dorado y brillante, con
+    subida y bajada de 'rampa' cuadros. Mete una mezcla con emision dorada en cada material (solo en el archivo
+    abierto: el mapa no cambia). Se puede volver a llamar: rehace las llaves."""
+    hechos = []
+    for nm in nombres:
+        m = bpy.data.materials.get(nm)
+        if not m or not m.use_nodes:
+            continue
+        nt = m.node_tree
+        out = next(n for n in nt.nodes if n.type == 'OUTPUT_MATERIAL' and n.is_active_output)
+        mx = nt.nodes.get("VFX_Dorado_Mix")
+        if mx is None:
+            src = out.inputs["Surface"].links[0].from_socket
+            em = nt.nodes.new("ShaderNodeEmission"); em.name = "VFX_Dorado_Em"
+            em.inputs["Color"].default_value = (*_rgb(color), 1); em.inputs["Strength"].default_value = fuerza
+            mx = nt.nodes.new("ShaderNodeMixShader"); mx.name = "VFX_Dorado_Mix"
+            nt.links.new(src, mx.inputs[1]); nt.links.new(em.outputs[0], mx.inputs[2]); nt.links.new(mx.outputs[0], out.inputs["Surface"])
+        fac = mx.inputs[0]
+        ad = nt.animation_data
+        if ad and ad.action:                                   # Blender 5: las curvas viven en capas/tiras/channelbags
+            for lay in ad.action.layers:
+                for st in lay.strips:
+                    for cb in st.channelbags:
+                        for fc in [c for c in cb.fcurves if "VFX_Dorado_Mix" in c.data_path]:
+                            cb.fcurves.remove(fc)
+        fac.default_value = 0.0; fac.keyframe_insert("default_value", frame=0)
+        for f0, f1 in tramos:
+            for f, v in ((f0 - rampa, 0.0), (f0, cuanto), (f1, cuanto), (f1 + rampa, 0.0)):
+                fac.default_value = v; fac.keyframe_insert("default_value", frame=f)
+        hechos.append(nm)
+    return hechos
+
+
+# ------------------------------------------------------------------ fuego "de verdad" (EP007: "que el fuego SI parezca fuego")
+def _mat_fuego(nombre="VFX_FuegoVivo_v2", fuerza=1.4):
+    """(con Standard un brillo > ~1,5 lo quema a blanco: el naranja y el rojo se pierden)
+    llama con volumen: color por ALTURA (blanco-amarillo abajo -> naranja -> rojo arriba) movido por un ruido que SUBE
+    con el tiempo (driver de frame), orilla y punta transparentes (se deshace), sin sombra. La malla mide 1 de alto en
+    su Z local (el tamano lo da la escala del objeto)."""
+    m = bpy.data.materials.get(nombre)
+    if m:
+        return m
+    m = bpy.data.materials.new(nombre); m.use_nodes = True
+    nt = m.node_tree; N, L = nt.nodes, nt.links
+    for n in list(N):
+        N.remove(n)
+    out = N.new("ShaderNodeOutputMaterial")
+    tc = N.new("ShaderNodeTexCoord")
+    mp = N.new("ShaderNodeMapping"); L.new(tc.outputs["Object"], mp.inputs["Vector"])
+    mp.inputs["Scale"].default_value = (2.2, 2.2, 1.3)
+    fc = mp.inputs["Location"].driver_add("default_value", 2)
+    fc.driver.type = 'SCRIPTED'; fc.driver.expression = "-frame * 0.07"         # el ruido sube: la llama "corre" hacia arriba
+    nz = N.new("ShaderNodeTexNoise"); nz.inputs["Scale"].default_value = 2.6; nz.inputs["Detail"].default_value = 3.0
+    L.new(mp.outputs["Vector"], nz.inputs["Vector"])
+    sx = N.new("ShaderNodeSeparateXYZ"); L.new(tc.outputs["Object"], sx.inputs["Vector"])
+    m1 = N.new("ShaderNodeMath"); m1.operation = 'SUBTRACT'; m1.inputs[1].default_value = 0.5
+    L.new(nz.outputs["Fac"], m1.inputs[0])
+    m2 = N.new("ShaderNodeMath"); m2.operation = 'MULTIPLY_ADD'; m2.inputs[1].default_value = 0.55
+    L.new(m1.outputs[0], m2.inputs[0]); L.new(sx.outputs["Z"], m2.inputs[2])           # altura + ruido
+    ramp = N.new("ShaderNodeValToRGB"); L.new(m2.outputs[0], ramp.inputs["Fac"])
+    el = ramp.color_ramp.elements
+    el[0].position, el[0].color = 0.0, (1.0, 0.93, 0.62, 1)
+    el[1].position, el[1].color = 0.97, (0.3, 0.02, 0.0, 1)
+    for p_, c_ in ((0.12, (1.0, 0.76, 0.16, 1)), (0.3, (1.0, 0.42, 0.03, 1)), (0.55, (0.9, 0.15, 0.01, 1)), (0.82, (0.55, 0.05, 0.0, 1))):
+        e = el.new(p_); e.color = c_
+    em = N.new("ShaderNodeEmission"); em.inputs["Strength"].default_value = fuerza
+    L.new(ramp.outputs["Color"], em.inputs["Color"])
+    lw = N.new("ShaderNodeLayerWeight"); lw.inputs["Blend"].default_value = 0.45
+    a1 = N.new("ShaderNodeMath"); a1.operation = 'SUBTRACT'; a1.inputs[0].default_value = 1.0
+    L.new(lw.outputs["Facing"], a1.inputs[1])                                           # 1 en el centro, 0 en la orilla
+    a2 = N.new("ShaderNodeMath"); a2.operation = 'SUBTRACT'; a2.inputs[0].default_value = 1.08
+    L.new(m2.outputs[0], a2.inputs[1])                                                  # se deshace hacia la punta
+    a3 = N.new("ShaderNodeMath"); a3.operation = 'MULTIPLY'; L.new(a1.outputs[0], a3.inputs[0]); L.new(a2.outputs[0], a3.inputs[1])
+    a4 = N.new("ShaderNodeMath"); a4.operation = 'MULTIPLY'; a4.inputs[1].default_value = 2.6; a4.use_clamp = True
+    L.new(a3.outputs[0], a4.inputs[0])
+    tr = N.new("ShaderNodeBsdfTransparent")
+    mx = N.new("ShaderNodeMixShader"); L.new(a4.outputs[0], mx.inputs[0])
+    L.new(tr.outputs[0], mx.inputs[1]); L.new(em.outputs[0], mx.inputs[2])
+    L.new(mx.outputs[0], out.inputs["Surface"])
+    try:
+        m.surface_render_method = 'BLENDED'
+    except Exception:
+        m.blend_method = 'BLEND'
+    m.use_backface_culling = True
+    m.diffuse_color = (1.0, 0.5, 0.05, 1)
+    return m
+
+
+def _lengua_fuego(nombre, col, semilla, mat):
+    """una LENGUA de fuego: gota que se adelgaza hasta una punta curva (1 de alto, origen en la base)."""
+    rnd = random.Random(semilla)
+    me = bpy.data.meshes.new(nombre); bm = bmesh.new()
+    seg, an = 14, 14
+    ph, amp = rnd.uniform(0, T2), rnd.uniform(0.04, 0.09)
+    anillos = []
+    for i in range(1, seg):
+        t = i / seg
+        r = 0.5 * (t / 0.2) ** 0.55 if t < 0.2 else 0.5 * ((1 - t) / 0.8) ** 1.25
+        cx = amp * math.sin(t * 5.5 + ph) * t * 1.6                                     # la punta se curva
+        cy = amp * 0.6 * math.cos(t * 4.0 + ph) * t
+        anillos.append([bm.verts.new((cx + r * math.cos(T2 * k / an), cy + r * math.sin(T2 * k / an), t)) for k in range(an)])
+    abajo, arriba = bm.verts.new((0, 0, 0)), bm.verts.new((anillos[-1][0].co.x * 0.6, 0, 1.0))
+    for k in range(an):
+        j = (k + 1) % an
+        bm.faces.new((abajo, anillos[0][j], anillos[0][k]))
+        bm.faces.new((anillos[-1][k], anillos[-1][j], arriba))
+        for a, b in zip(anillos[:-1], anillos[1:]):
+            bm.faces.new((a[k], a[j], b[j], b[k]))
+    bm.normal_update(); bm.to_mesh(me); bm.free()
+    for p in me.polygons:
+        p.use_smooth = True
+    me.materials.append(mat)
+    o = bpy.data.objects.new(nombre, me); col.objects.link(o); o.visible_shadow = False
+    return o
+
+
+def fuego_vivo(nombre, col, pos, f0, f1, tam=1.0, semilla=1, chispas=True, luz=True, fuerza=1.4):
+    """FUEGO que si parece fuego (pedido del usuario EP007): 5 lenguas de llama con volumen que crecen, bajan y se
+    mecen (llaves cada 2 cuadros), color por altura con ruido que sube, nucleo claro, resplandor, CHISPAS que suben y
+    una luz naranja que parpadea. Sin simulacion. Alto ~1,5 * tam. Devuelve el vacio raiz (origen en la base: se puede
+    pegar a una mano con ep7.en_mano). Visible de f0 a f1."""
+    rnd = random.Random(semilla)
+    raiz = _raiz(nombre, col, pos)
+    mat = _mat_fuego(fuerza=fuerza)
+    lenguas = [(0.0, 0.0, 1.0, 0.62), (0.16, 0.06, 0.78, 0.46), (-0.16, -0.04, 0.82, 0.48), (0.05, -0.15, 0.66, 0.4),
+               (-0.06, 0.15, 0.7, 0.42)]
+    hechos = []
+    for i, (dx, dy, h, w) in enumerate(lenguas):
+        o = _lengua_fuego("%s_L%d" % (nombre, i), col, semilla * 13 + i, mat)
+        o.parent = raiz; o.location = (dx * tam, dy * tam, 0)
+        hechos.append((o, h * 1.5 * tam, w * tam, rnd.uniform(0, T2)))
+    nuc = _lengua_fuego(nombre + "_Nucleo", col, semilla * 13 + 9, _mat_fuego("VFX_FuegoNucleo_v2", fuerza * 1.5))
+    nuc.parent = raiz; hechos.append((nuc, 0.55 * tam, 0.34 * tam, rnd.uniform(0, T2)))
+    for f in range(f0, f1 + 1, 2):                    # crece, baja y se mece (nunca igual: senos con fases distintas)
+        t = f / 30.0
+        for o, h, w, ph in hechos:
+            n1 = math.sin(t * 9.1 + ph) * 0.5 + math.sin(t * 15.3 + ph * 1.7) * 0.3 + math.sin(t * 23.7 + ph * 0.6) * 0.2
+            o.scale = (w * (1 - 0.07 * n1), w * (1 - 0.07 * n1), h * (1 + 0.2 * n1))
+            o.rotation_euler = (math.radians(7 * math.sin(t * 5.3 + ph)), math.radians(8 * math.sin(t * 4.1 + ph * 1.3)), 0)
+            o.keyframe_insert("scale", frame=f); o.keyframe_insert("rotation_euler", frame=f)
+    # resplandor suave en la base (no tapa: transparente en la orilla)
+    gm = bpy.data.materials.get("VFX_FuegoResplandor_v2")
+    if gm is None:
+        gm = bpy.data.materials.new("VFX_FuegoResplandor_v2"); gm.use_nodes = True
+        nt = gm.node_tree
+        for n in list(nt.nodes):
+            nt.nodes.remove(n)
+        out = nt.nodes.new("ShaderNodeOutputMaterial"); em = nt.nodes.new("ShaderNodeEmission")
+        em.inputs["Color"].default_value = (1.0, 0.42, 0.05, 1); em.inputs["Strength"].default_value = 1.0
+        lw = nt.nodes.new("ShaderNodeLayerWeight"); lw.inputs["Blend"].default_value = 0.6
+        a = nt.nodes.new("ShaderNodeMath"); a.operation = 'SUBTRACT'; a.inputs[0].default_value = 1.0
+        nt.links.new(lw.outputs["Facing"], a.inputs[1])
+        b = nt.nodes.new("ShaderNodeMath"); b.operation = 'POWER'; b.inputs[1].default_value = 2.5; nt.links.new(a.outputs[0], b.inputs[0])
+        c = nt.nodes.new("ShaderNodeMath"); c.operation = 'MULTIPLY'; c.inputs[1].default_value = 0.4; nt.links.new(b.outputs[0], c.inputs[0])
+        tr = nt.nodes.new("ShaderNodeBsdfTransparent"); mx = nt.nodes.new("ShaderNodeMixShader")
+        nt.links.new(c.outputs[0], mx.inputs[0]); nt.links.new(tr.outputs[0], mx.inputs[1]); nt.links.new(em.outputs[0], mx.inputs[2])
+        nt.links.new(mx.outputs[0], out.inputs["Surface"])
+        try:
+            gm.surface_render_method = 'BLENDED'
+        except Exception:
+            gm.blend_method = 'BLEND'
+        gm.use_backface_culling = True
+    me = bpy.data.meshes.new(nombre + "_Resplandor"); bm = bmesh.new()
+    bmesh.ops.create_uvsphere(bm, u_segments=20, v_segments=12, radius=0.55 * tam)
+    bm.to_mesh(me); bm.free(); me.materials.append(gm)
+    for p in me.polygons:
+        p.use_smooth = True
+    g = bpy.data.objects.new(nombre + "_Resplandor", me); col.objects.link(g); g.parent = raiz
+    g.location = (0, 0, 0.45 * tam); g.scale = (1.0, 1.0, 1.25); g.visible_shadow = False
+    if chispas:                                       # chispas que suben, se van de lado y se apagan
+        cm = _mat("VFX_Chispa_Fuego", "#ffc04a", 9.0, 0.3)
+        for k in range(9):
+            me = bpy.data.meshes.new("%s_Chispa%d" % (nombre, k)); bm = bmesh.new()
+            bmesh.ops.create_icosphere(bm, subdivisions=1, radius=0.035 * tam); bm.to_mesh(me); bm.free(); me.materials.append(cm)
+            ch = bpy.data.objects.new(me.name, me); col.objects.link(ch); ch.parent = raiz; ch.visible_shadow = False
+            dur = rnd.randint(16, 26); f = f0 + rnd.randint(0, dur)
+            while f < f1:
+                x0, y0 = rnd.uniform(-0.25, 0.25) * tam, rnd.uniform(-0.25, 0.25) * tam
+                ch.location = (x0, y0, 0.3 * tam); ch.scale = (0.01,) * 3
+                ch.keyframe_insert("location", frame=f); ch.keyframe_insert("scale", frame=f)
+                ch.scale = (1.0,) * 3; ch.keyframe_insert("scale", frame=f + 2)
+                ch.location = (x0 + rnd.uniform(-0.5, 0.5) * tam, y0 + rnd.uniform(-0.3, 0.3) * tam, rnd.uniform(1.7, 2.4) * tam)
+                ch.scale = (0.01,) * 3
+                ch.keyframe_insert("location", frame=f + dur); ch.keyframe_insert("scale", frame=f + dur)
+                f += dur + 1
+    if luz:                                           # luz naranja que parpadea
+        ld = bpy.data.lights.new(nombre + "_Luz", 'POINT'); ld.color = (1.0, 0.52, 0.16); ld.shadow_soft_size = 0.3 * tam
+        lo = bpy.data.objects.new(nombre + "_Luz", ld); col.objects.link(lo); lo.parent = raiz; lo.location = (0, 0, 0.7 * tam)
+        for f in range(f0, f1 + 1, 2):
+            t = f / 30.0
+            ld.energy = 110 * tam * (0.85 + 0.15 * math.sin(t * 17 + semilla) + 0.1 * math.sin(t * 29))
+            ld.keyframe_insert("energy", frame=f)
+    for o in [raiz] + list(raiz.children_recursive):
+        _visible(o, f0, f1)
+        _constante(o)
+    return raiz

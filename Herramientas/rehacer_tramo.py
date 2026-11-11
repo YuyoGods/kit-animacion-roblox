@@ -46,6 +46,8 @@ def main():
     EP = episodio(a.ep)
     carpeta = os.path.join(EP, "renders", modo, "fotogramas")
     os.makedirs(carpeta, exist_ok=True)
+    import limpiar_episodio                      # episodio ya limpio: sus PNG quedaron en fotogramas/fotogramas.mp4
+    limpiar_episodio.restaurar(carpeta)
 
     if a.deshacer:
         resp = sorted(glob.glob(os.path.join(RESPALDOS, "%s_%s_*" % (a.ep, modo))))

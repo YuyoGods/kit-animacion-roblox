@@ -17,8 +17,15 @@ Hacerlo directo, sin explicaciones largas (ya está probado con Crista). Pasos:
    - Manual (si el automático falla): copiar `armar_rig_r15_plantilla.py` como `build_<nombre>_rig.py`, cambiar `Crista` por el nombre y llenar `PARTS` y `ACC`.
 4. Resultado: `<Nombre>_R15_Rig.blend` + `previews/` (frente, lado, espalda, pose de prueba).
 5. **Revisar las fotos** (piezas en su lugar, nada flotando ni separado al doblar; materiales con la salida conectada, ver lección de caras negras). Corregir y repetir si hace falta.
+   - **Examinar la piel** (lección 88): `blender -b "<carpeta>/<Nombre>_R15_Rig.blend" --python Herramientas/blender/revisar_piel.py` → debe decir **OK** (cabeza y manos del mismo tono). `SE ARREGLA` → repetir con `-- --arreglar`. `REVISAR` → tonos distintos de fábrica: avisarle al usuario con foto y proponer `objetos_cartoon.igualar_piel`.
 6. **No borrar** lo que subió el usuario. Si ya existía un `<Nombre>_R15_Rig.blend`, moverlo a `Respaldos/<Nombre>_rig_<fecha>.blend` antes de crear el nuevo.
 7. Anotar en `MI_CANAL.md` (reparto: estado "rig listo", altura, rig) y responder corto: *"Listo: <Nombre> ya tiene rig → `<ruta>`"* + una foto de `previews/`.
+
+## Personajes que no son R15 (2026-11-11)
+- **Esqueleto propio** (ciervo, monstruos, animales con piezas como `UpperArm.R`, `StagFinger1.L`): `rig_motor6d.py`, un hueso
+  por Motor6D y sus animaciones de Studio exactas (ver `Herramientas/roblox/LEEME.md`).
+- **R6** sin plantilla R15 en el lugar: `CL_r6a15` sin plantilla + exportar dos veces + cabeza clásica con la cara del kit.
+- Personajes que el usuario hace solo para una historia: van en `Episodios/EP###/personajes/`, no en `Personajes/`.
 
 ## Caras (expresiones)
 - **Método recomendado (cabeza clásica, ej. Lila y Coco): cara en la textura**, sin planos encima. `Herramientas/blender/caras_textura.py` le da a la cabeza un material propio: piel + la cara elegida, pintada de frente sobre toda la cara de la cabeza (tamaño aprobado por el usuario; `zona="frente"` la hace más chica), y borra la cara de fábrica. La sonrisa de siempre (15) está reducida a su tamaño original. La cara se elige con la propiedad **`cara`** del rig (número de `Caras/Emociones/_secuencia/caras.json`: 1 molesto · 2 sorpresa · 3 pícaro · 4 confundido · 5 risa · 6 triste · 7 asustado · 8 muy feliz · 9 nervioso · 10 preocupado · 11 incrédulo · 12 bostezo · 13 indignado · 14 asombro · 15 sonrisa de siempre) y se anima con keyframes (cambio seco: valor viejo en f−1, nuevo en f).
@@ -29,6 +36,14 @@ Hacerlo directo, sin explicaciones largas (ya está probado con Crista). Pasos:
 - Método (como Sikelpa): un plano por expresión al frente de la cabeza, emparentado al hueso `Head`, material con transparencia; se cambia la cara con keyframes de visibilidad (`hide_render` + `hide_viewport`) en el fotograma de la emoción.
 - Si la cara viene pintada en la textura del cuerpo (Crista), es fija: para hacerla intercambiable hay que tapar la cara de la textura y usar los planos.
 - Elegir la emoción según el guion (ej. "¡y ya iba tarde!" → asombro/miedo). Si falta una emoción, buscar en los paquetes y preguntar.
+
+## Alturas: que los niños se vean niños (EP006, 2026-11-09)
+- Antes todos medían casi lo mismo (coronilla 4,4–5,45) y **Sikelpa salía más alto que su mamá y que el presidente**. El usuario pidió que los niños se vean niños.
+- Medidas del kit, a la **coronilla** (fin del hueso `Head`, sin gorros): **adulto 5,1 · niño 4,0 (~78 %) · niño chico 3,45**, o `"original"` para dejar a alguien sin escalar. Cada canal anota sus excepciones en `MI_CANAL.md` (el mantenedor dejó a su protagonista con su tamaño original).
+- En el script del episodio, después de anexar a cada personaje: `alturas.escalar(rig, "nino")` (`Herramientas/blender/alturas.py`). Se escala el rig entero: piezas, accesorios y lo que tenga en la mano lo siguen. Los 30 rigs del kit se revisaron (sin restricciones externas ni piezas sueltas), así que escalarlos es seguro.
+- **Al caminar** con un rig escalado: `alturas.fase_paso(rig, distancia, tipo)` para el ciclo y la bajada de cadera × `alturas.escala(rig)`; si no, los pies patinan.
+- `tomas_simples.py` ya acomoda la distancia y la altura de cada cámara a la escala del personaje (la cara sale del mismo tamaño).
+- Quién es niño y quién adulto en cada canal: `MI_CANAL.md` → reparto (columna *Altura*). Foto de prueba: `Episodios/EP006_La_Fuente_Eligio_A_Mi_Hermana/referencias/alturas_ninos_adultos.jpg`.
 
 ## Quién sale y cuánto (reparto)
 - Usar **siempre** el reparto de `MI_CANAL.md`. Nunca personajes al azar.

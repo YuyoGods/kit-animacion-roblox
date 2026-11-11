@@ -48,7 +48,7 @@ Marcar cada paso. No saltar la **revisión de cámaras** (paso 6).
 
 ## 7. Vista previa
 - [ ] Preguntar si quiere **2 Blender en paralelo** (`py Herramientas/render_paralelo.py EP### preview`, ≈1,6× más rápido; si no, `--procesos 1`). Se renderiza en segundo plano desde el `.blend` guardado: 50 %, 16 muestras, PNG → MP4.
-- [ ] El usuario la revisa.
+- [ ] El usuario la revisa. Al entregarla aprobada, **preguntar siempre**: «¿Hago el render final o limpio los residuos?» (ver "Limpieza").
 
 ## 8. Voz, subtítulos y efectos
 - [ ] La voz ya está hecha y aprobada desde la sección 1 (voz primero); las tomas y las palabras salen de `audio/tomas_voz.json`. Los efectos van en su palabra (`"palabra:pum"`).
@@ -62,3 +62,9 @@ Marcar cada paso. No saltar la **revisión de cámaras** (paso 6).
 - [ ] Render 100 % en segundo plano → `renders/final/fotogramas/c_####.png`.
 - [ ] `py armar_video.py EP###_Titulo final` → MP4 final en `renders/final/`.
 - [ ] Anotar en `MI_BITACORA.md`. Publicar **solo** si el usuario lo pide.
+
+## Limpieza (al terminar el episodio)
+Cada episodio deja 2–6 GB de residuos (PNG de `preview/fotogramas`, `borrador/`, `pruebas/`). Pedido del usuario (2026-11-11): al terminar, ofrecer limpiarlos; lo que importa son los MP4 de `preview/` y `final/`.
+- [ ] Nunca con un render en curso ni sin el MP4 entregado (la herramienta se niega sola).
+- [ ] `py Herramientas/limpiar_episodio.py EP###` (simulacro: lista y cuánto libera) → mostrarlo y **confirmar con el usuario** (no se puede deshacer) → `... EP### --borrar`.
+- [ ] Los PNG no se pierden del todo: quedan en `fotogramas/fotogramas.mp4` (~3 % del peso). `rehacer_tramo.py` y `armar_video.py` los vuelven a sacar solos para cambiar una toma o el sonido (o `--restaurar`). Con `--respaldos` también borra los respaldos de fotogramas de `rehacer_tramo` en `Respaldos/`.

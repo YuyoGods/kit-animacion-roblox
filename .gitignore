@@ -27,6 +27,10 @@ Personajes/Pueblo_NPC/*
 !Personajes/Pueblo_NPC/LEEME.md
 Personajes/Plantillas_Rigs/*
 !Personajes/Plantillas_Rigs/LEEME.md
+Personajes/Animaciones/*
+!Personajes/Animaciones/LEEME.md
+Personajes/*.jpg
+Personajes/*.png
 Caras/*
 !Caras/LEEME.md
 
@@ -41,6 +45,10 @@ Episodios/*
 
 Respaldos/*
 !Respaldos/LEEME.md
+
+# Musica de fondo de cada canal (puede tener licencia)
+Musica/*
+!Musica/LEEME.md
 
 # =====================================================================
 #  Archivos generados
