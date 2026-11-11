@@ -4,33 +4,196 @@
 > Si una actualización renombra o mueve archivos compartidos, avisarlo aquí.
 
 ## v0.6.0 — 2026-11-11 — Lo que el dueño revisa, Claude ya lo cumple solo
-Lo aprendido en EP006 a EP012. Ningún archivo compartido se renombró ni se movió.
 
-**Reglas nuevas para Claude** (`CLAUDE.md`, `docs/05`, `docs/06`, skills `nuevo-episodio` y `poner-rig`):
-- **Voz en off sin huecos**: `recortar_pausas.py` ahora deja hasta 0,10 s entre palabras, 0,12 s en comas, ~0,14 s entre líneas y 0,2 s después de "…". Antes eran 0,3–0,4 s entre líneas y EP005 se sintió lento. Viene así por defecto. Si ya recortaste una voz con la versión anterior, vuelve a correr `recortar_pausas.py` y `tomas_desde_voz.py`.
-- **Lista de lo que revisa el dueño en cada borrador** (`docs/05_CAMARAS_Y_TOMAS.md`): gancho sin huecos, nada quieto más de ~1 s, lo que se lanza se ve caer, nada tapa, caras (nunca la de fábrica), luz de noche, accesorios bien puestos, identidad de cada personaje, objetos chiquitos grandes y volumen. Claude la cumple antes de mandar el borrador.
-- **Zona segura de Shorts**: caras, burbujas y letreros centrados en x 6–86 %, y 12–70 % (abajo tapan el título y el botón de suscribirse). `Herramientas/blender/zona_segura.py` revisa y encuadra solo.
-- **Efectos de sonido que duran solo su acción** y se apagan suave antes del corte; pocos (uno por acción importante). Sin viento de día, sin aplausos ni multitud y sin ladridos (`docs/06`).
-- **El narrador no dice onomatopeyas** (¡pop!, ¡boing!): las pone el efecto. Si ya están en una voz aprobada, `Herramientas/audio/quitar_onomatopeyas.py` las quita sin gastar créditos.
-- **Recuerdos sin marco**: se cuentan como una toma normal.
-- **Al entregar la vista previa aprobada**, Claude pregunta: «¿Hago el render final o limpio los residuos?».
-- **Lecciones 80–112** en `docs/02_LECCIONES.md`: niños que se vean niños, letreros grandes, mundos enormes, fuego que parece fuego, ola gigante, corazones que nacen del personaje, postura en tabla de surf, vista previa más rápida con muchas luces, entre otras.
+> **Para ti, que recibes esta actualización.** Aquí está, una por una, cada cosa nueva que trae. Todo sale de hacer 7 episodios más (EP006 a EP012) y de las correcciones que el dueño del kit le fue pidiendo a Claude en ese tiempo. Claude ya las conoce y las aplica solo; esta guía es para que **tú** sepas qué va a hacer distinto y por qué.
+>
+> **No se borra nada tuyo.** Tus personajes, caras, mapas, episodios, `MI_CANAL.md`, `MI_BITACORA.md` y `mi_config.json` quedan igual. Ningún archivo del kit cambió de nombre ni de lugar.
 
-**Herramientas nuevas**:
-- `Herramientas/audio/musica_fondo.py`: **música de fondo** de principio a fin, recortada al final del video y por debajo de la voz. Se configura en `mi_config.json` → `"musica_fondo"` y `"musica_fondo_db"` (nuevos en `mi_config.ejemplo.json`). La canción va en la carpeta personal `Musica/` (no se sube).
-- `Herramientas/limpiar_episodio.py`: libera 2–6 GB por episodio terminado (borra `borrador/`, `pruebas/` y los PNG, que quedan comprimidos en `fotogramas.mp4`). Primero hace un simulacro. `rehacer_tramo.py` y `armar_video.py` recuperan los PNG solos si hacen falta.
-- `Herramientas/blender/alturas.py`: niños más bajos que los adultos (adulto 5,1 · niño 4,0 · niño chico 3,45) sin que los pies patinen.
-- `Herramientas/blender/revisar_piel.py`: revisa y arregla la cabeza bronceada junto a manos claras (la skill `poner-rig` ya la corre).
-- `Herramientas/blender/rig_motor6d.py`: rig para modelos que no son R15 (ciervo, monstruos, animales) con sus animaciones de Studio.
-- **Animaciones de Roblox Studio a Blender**: `Herramientas/roblox/sacar_animacion.luau` + `Herramientas/blender/animacion_roblox.py` (bailes y emotes en cualquier rig R15). Se guardan en la carpeta personal `Personajes/Animaciones/`.
-- `Herramientas/audio/acortar_palabra.py`: acorta una palabra estirada de la voz sin gastar créditos.
-- `voz_elevenlabs.py --anteponer`: agrega un gancho nuevo al principio sin rehacer la voz aprobada. Modelo por defecto `eleven_v4`.
-- `armar_secuencia_caras.py --agregar`: caras nuevas al final sin cambiar los números que ya usan tus episodios.
-- `vfx.py`: fuego que parece fuego (`fuego_vivo`), corazones que nacen del personaje (`corazones_emisor`) y más. `objetos_cartoon.py`: muchos objetos nuevos (entre ellos `rayos_brillo`).
-- Exportar de Studio: personajes R6 se convierten a R15 (`_G.CL_r6a15`).
-- `PLANO.md` de la plantilla: cada cosa que se modela lleva su referencia de internet y se construye por lotes.
+### Qué hacer después de actualizar
+1. Corre `py instalar.py` (o dile a Claude «actualiza el kit»). Revisa que todo siga funcionando.
+2. **Opcional, música de fondo:** pon una canción en la carpeta `Musica/` y su ruta en tu `mi_config.json` (ver la sección 2).
+3. **Opcional, modelo de voz nuevo:** si quieres la voz más actuada, cambia en tu `mi_config.json` la línea `"modelo_voz"` a `"eleven_v4"` (ver la sección 1).
+4. Si tienes un episodio a medias con la voz ya recortada, vuelve a correr `recortar_pausas.py` y `tomas_desde_voz.py` para que tenga los huecos cortos nuevos.
 
-**Carpetas personales nuevas** (git no las sube, solo su `LEEME.md`): `Musica/` y `Personajes/Animaciones/`.
+---
+
+### 1. Voz en off: sin huecos y con más opciones
+- **Huecos más cortos entre frases.** `recortar_pausas.py` ahora deja:
+
+  | Dónde | Antes | Ahora |
+  |---|---|---|
+  | Entre palabras | hasta 0,2 s | hasta 0,10 s |
+  | Después de una coma | 0,3 s | 0,12 s |
+  | Al final de cada línea | 0,3–0,4 s | ~0,14 s |
+  | Después de "…" | 0,41–0,55 s | 0,2 s |
+
+  Por qué: en EP005, de 2 min 22 s de video, 34 s eran silencio y se sentía lento. Se probaron dos recortes de la misma voz (gratis) y el dueño eligió el de 0,14 s. Viene así por defecto; si quieres otro ritmo, usa `--respiro 0.2` (o el valor que quieras).
+- **Modelo `eleven_v4`** (nuevo valor por defecto en `mi_config.ejemplo.json`): la misma voz, pero más actuada. Habla con un poco más de calma. Gastó unos 981 créditos por 2.229 letras.
+- **Agregar un gancho al principio sin rehacer toda la voz:** `py Herramientas/audio/voz_elevenlabs.py EP### --anteponer`. Escribes las líneas nuevas arriba en `narracion.txt` y solo se cobran esas. Ojo: después hay que correr `tomas_desde_voz.py` otra vez, porque todas las tomas se recorren.
+- **Palabra estirada sin gastar créditos:** si `recortar_pausas.py` avisa que una palabra quedó larga (por ejemplo "detrás" de 0,72 s), `py -X utf8 Herramientas/audio/acortar_palabra.py EP### <segundo_inicio> <segundo_fin> [factor]` la acorta sin cambiar el tono y guarda la versión anterior en `Respaldos/`.
+- **El narrador ya no dice onomatopeyas** (¡pop!, ¡boing!, ¡clic!): las pone el efecto de sonido. Si ya tienes una voz aprobada que las dice, `py Herramientas/audio/quitar_onomatopeyas.py EP###` las corta de la voz sin gastar créditos, deja una marca para que el efecto caiga justo ahí y las quita de los subtítulos (`--probar` para ver qué haría).
+
+### 2. Música de fondo (nuevo)
+- `Herramientas/audio/musica_fondo.py` pone una canción **desde el primer cuadro hasta el último** del video. Lo usa solo `armar_video.py`.
+- Si la canción es más larga que el video, se recorta al final con una salida suave de 1,5 s (no queda pantalla negra con música). Si es más corta, se repite.
+- Se oye **por debajo de la voz**: 16 dB más bajita (dato `"musica_fondo_db"`) y mientras habla el narrador baja unos 4 dB más.
+- **Cómo activarla:** pon la canción en la carpeta nueva `Musica/` y en tu `mi_config.json` agrega:
+  ```json
+  "musica_fondo": "Musica/mi_cancion.mp3",
+  "musica_fondo_db": -16
+  ```
+  Si lo dejas vacío, el video sale sin música, como antes.
+- La carpeta `Musica/` es **personal**: git no la sube (la música puede tener licencia).
+- Para escuchar solo la mezcla sin hacer el video: `py Episodios/EP###/scripts/armar_video.py EP### preview --solo-audio`.
+- Si tienes episodios viejos con su propia copia de `armar_video.py`, esas copias no traen música; los episodios nuevos sí (salen de la plantilla nueva).
+
+### 3. Efectos de sonido más limpios
+- **Cada efecto suena solo mientras pasa su acción** (el dueño lo marcó como «muy importante»). Muchos sonidos de la librería duran 5–6 s; ahora `armar_video.py` los corta al terminar su toma con un desvanecido suave (0,15–0,6 s), para que no se oiga el corte. Un 5.º dato los acorta más: segundos (`0.6`) o `"hasta:palabra:una"`.
+- Los sonidos que dependen de la animación (como el tecleo mientras aparecen letras) van en `audio/efectos_animacion.json` y suenan solo en ese tramo.
+- **Pocos efectos:** uno por acción importante (unos 20 en 2 minutos, no 30).
+- **Sonidos que cansaron al público:** nada de viento de día (`wind`), nada de aplausos ni multitudes (`applause`, `cheer`) y nada de ladridos (`dog_bark`). El festejo se ve en la animación y lo cubre la música.
+- El volumen final queda en −14 LUFS de verdad (antes se quedaba en −15,3).
+
+### 4. Revisión antes de entregar: lo que el dueño siempre corregía, ahora Claude lo revisa solo
+- **Lista de cada borrador** (en `docs/05_CAMARAS_Y_TOMAS.md`). Claude la cumple antes de mandarte nada:
+  1. Gancho sin huecos en los primeros 8 s (acción en cada segundo, 2–3 cortes por frase).
+  2. Ninguna toma con más de ~1 s sin que pase algo.
+  3. Lo que se lanza se ve caer.
+  4. Nada tapa al personaje (postes, gente, muebles).
+  5. Caras con emoción (nunca la de fábrica), y los extras también reaccionan.
+  6. Luz de noche que no deslumbra.
+  7. Accesorios bien puestos (sombrero, banda, bigote).
+  8. Cada personaje con su identidad y sus propios objetos.
+  9. Objetos chiquitos que importan (monedas, llaves), grandes y de frente.
+  10. Volumen a −14 LUFS.
+- **Zona segura de Shorts** (nuevo, `Herramientas/blender/zona_segura.py`): en YouTube Shorts, abajo tapan el título y el botón de suscribirse, y a la derecha están los botones. Caras, burbujas y letreros van centrados en la zona segura (de izquierda a derecha 6–86 %, de arriba abajo 12–70 %).
+  - `revisar()` avisa si algo queda fuera.
+  - `encuadrar()` calcula dónde poner la cámara para que todo quepa.
+  - `reencuadrar()` corrige una cámara ya hecha.
+- **Recuerdos sin marco:** los recuerdos (flashbacks) se cuentan como una toma normal, sin marco de nubes. La voz dice que es antes.
+- **Letreros grandes:** todo letrero de la historia ocupa al menos 1/3 del ancho del cuadro y nunca se sale del marco.
+
+### 5. Personajes
+- **Niños más bajos que los adultos** (nuevo, `Herramientas/blender/alturas.py`). Antes todos medían casi lo mismo. Ahora:
+  - Medidas a la coronilla: adulto 5,1 · niño 4,0 · niño chico 3,45.
+  - `alturas.escalar(rig, "nino")` escala todo el personaje, con sus accesorios y lo que tenga en la mano.
+  - `alturas.fase_paso(...)` ajusta el paso para que los pies no patinen.
+  - `tomas_simples.py` ya acerca la cámara según el tamaño, así que la cara sale del mismo tamaño.
+  - Quién es niño y quién adulto lo anotas en tu `MI_CANAL.md` (columna *Altura*).
+- **Revisar la piel** (nuevo, `Herramientas/blender/revisar_piel.py`): arregla la cabeza bronceada junto a manos y piernas claras. Era un error del rig automático, que pasaba el color dos veces a lineal; `armar_rig_r15_auto.py` ya está corregido. La skill `poner-rig` lo revisa sola. Para tus rigs viejos:
+  ```
+  blender -b "Personajes/<nivel>/<Nombre>/<Nombre>_R15_Rig.blend" --python Herramientas/blender/revisar_piel.py -- --arreglar
+  ```
+- **Rig automático:** las capas negras de tela o cuero ya no salen blancas (texturas de material de Roblox × su color), y la opción `no_voltear` ya funciona bien.
+- **Modelos que no son R15** (nuevo, `Herramientas/blender/rig_motor6d.py`): ciervos, monstruos o animales con esqueleto propio. Crea un hueso por cada articulación de Studio y trae sus animaciones exactas.
+- **Personajes R6** (los viejitos, sin codos ni rodillas): `_G.CL_r6a15` en `Herramientas/roblox/studio_personajes.luau` hace una copia R15 con su ropa, colores, cara y accesorios, y conserva su tamaño. `exportar_obj.ps1 -Espera 25` le da tiempo a Studio de pintar la ropa antes de exportar.
+- **Animaciones de Roblox Studio a Blender** (nuevo): bailes, emotes o ataques.
+  1. En Studio: `_G.CL_sacarAnim(workspace.MiPersonaje, "Nombre")` (`Herramientas/roblox/sacar_animacion.luau`) la saca a un `.json`.
+  2. En Blender: `Herramientas/blender/animacion_roblox.py` la pone en cualquier rig R15 del kit.
+  3. Se guardan en la carpeta personal nueva `Personajes/Animaciones/`.
+  Solo se pueden bajar animaciones tuyas o de Roblox. Guía completa en `Herramientas/roblox/LEEME.md`.
+- **Caras nuevas sin romper tus episodios:** `py Herramientas/armar_secuencia_caras.py --agregar` pone las caras nuevas al final (28, 29…) sin cambiar los números que ya usas.
+- **Personajes de una sola historia:** van en `Episodios/EP###/personajes/`, no en `Personajes/`.
+
+### 6. Limpiar residuos de episodios terminados (nuevo)
+- Cada episodio deja 2–6 GB de imágenes sueltas. `Herramientas/limpiar_episodio.py` borra `borrador/`, `pruebas/` y los PNG de `fotogramas/`, y deja los MP4 que ya entregaste.
+- **Los PNG no se pierden del todo:** antes de borrarlos los guarda comprimidos en `fotogramas/fotogramas.mp4` (~3 % del peso). Si después quieres cambiar una toma, `rehacer_tramo.py` y `armar_video.py` los vuelven a sacar solos.
+- Primero hace un **simulacro** (te dice qué borraría y cuánto espacio libera). Solo borra con `--borrar`. Se niega si hay un render en curso o si todavía no existe el MP4.
+  ```
+  py Herramientas/limpiar_episodio.py EP007            (simulacro)
+  py Herramientas/limpiar_episodio.py EP007 --borrar   (de verdad; no se puede deshacer)
+  ```
+- Al entregarte una vista previa aprobada, Claude te va a preguntar: «¿Hago el render final o limpio los residuos?».
+
+### 7. Objetos nuevos para las escenas (`Herramientas/blender/objetos_cartoon.py`)
+Todos de caricatura y originales (sin marcas). Claude los usa cuando la historia los pide:
+- **Pensamientos y poderes:** `burbuja_pensamiento` (nube con **una sola** bolita, sin tapar la cara), `aura_poder`, `lucecita` (bolita de luz con estela), `chorro_luz` (rayo curvo de "le robó su poder"), `atrapa_poderes` (máquina del villano), `ventana_rayosx` (pared transparente en un círculo), `destellos`, `rayos_brillo`, `brillar` (hace brillar un objeto), `lineas_velocidad` (para volar), `marco_recuerdo`.
+- **Dinero y concursos:** `moneda`, `caja_monedas`, `bolsa_dinero`, `trofeo`, `podio_ganadores`, `mesa_jueces`, `gradas`, `numero_concursante` (dorsal en el pecho), `campanita` de mostrador.
+- **Comida y panadería:** `helado`, `bolsa_papas`, `papa_frita`, `chile`, `bolsa_chiles`, `galleta`, `frasco_galletas`, `concha`, `bolillo`, `cuernito`, `charola_panes`, `anaquel_panes`, `horno_lena`, `costal_harina`, `mesa_panadero`.
+- **Ropa y vestuario:** `sombrero_copa`, `bigote` (de una pieza lisa), `banda_presidencial`, `gorro_chef`, `chaqueta_chef`, `panuelo_cuello`, `mandil`, `mandil_curvo`, `lentes`, `cachetes` rosados, `babero`, `chupon`, `panal` (pañal de bebé), `letrero_espalda` (papel pegado en la espalda), `ropa_tirada`. Atajos para vestir NPC: `vestir_panadero`, `vestir_tendero` y `vestir_vecina`, además de `ocultar_pelo` (para ponerle otro gorro) e `igualar_piel`.
+- **Casa, tienda y calle:** `mostrador`, `caja_registradora`, `estante_frascos`, `frasco`, `frasco_especial`, `barril`, `caja_madera`, `contenedor_basura`, `bote_basura`, `tendedero`, `canasta_ropa` + `cargar_canasta`, `escalera_mano`, `pizarron`, `letrero_colgante`, `manta` (con letras), `libro_abierto`, `marco_foto`, `placa_fuente`, `cuna`, `movil_cuna`, `mecedora`, `control` de videojuego, `linterna_mano`, `telarana`, `veleta`, `vidrios_rotos`, `fondo_noche` (cielo con luna para ver por una ventana).
+- **Fiesta:** `racimo_globos` y `arco_globos`.
+- **Hélice de un gorro que gira:** `separar_helice` y `girar_helice`.
+
+### 8. Efectos visuales nuevos (`Herramientas/blender/vfx.py`)
+- `fuego_vivo`: fuego que sí parece fuego (lenguas con volumen, chispas y luz). Las llamas planas de antes parecían de papel.
+- `corazones_emisor`: corazones de cariño **llenos y rosas** (la forma de toda la vida) que nacen del pecho del personaje, uno tras otro, suben por detrás sin tapar la cara y se desvanecen. Reemplazan a los corazones de línea transparentes.
+- `chapoteo`: gotas en corona cuando algo cae al agua.
+- `lagrimas`: salen de los dos ojos y siguen a la cabeza.
+- `dorar_materiales`: vuelve dorado y brillante un material por tramos (por ejemplo, agua dorada).
+
+### 9. Otros arreglos en herramientas
+- `tomas_simples.py`: la cámara ya no da una vuelta completa a mitad de la toma.
+- `armar_video.py` y `rehacer_tramo.py` recuperan solos los PNG si el episodio ya se limpió.
+- `tomas_desde_voz.py` entiende las marcas de `quitar_onomatopeyas.py` (el golpe cae en su momento y sin subtítulo).
+- `voz_elevenlabs.py`: si el modelo (v3/v4) no acepta el contexto de las líneas vecinas, pide la línea sola.
+- `catalogo.py` anota la herramienta de alturas en tu `docs/10_CATALOGO.md`.
+- Plantilla `Episodios/_PLANTILLA_EPISODIO/PLANO.md`: cada cosa que se va a modelar lleva su **referencia de internet** (link y rasgos que se copian) y se construye **por lotes**, con foto de prueba contra la referencia.
+
+### 10. Lecciones nuevas (`docs/02_LECCIONES.md`, de la 80 a la 112)
+Son los errores que salieron en los episodios y cómo se arreglaron. Claude las lee antes de animar:
+- **80** La voz se sentía lenta por los huecos, no por la voz.
+- **81** Los niños no se veían niños (de ahí sale `alturas.py`).
+- **82** La cámara daba una vuelta completa a mitad de la toma.
+- **83** Revisión toma por toma: cámara dentro de una cascada, postes que tapan, objetos en la mano que tapan la cara.
+- **84** Luz de tarde y de noche (sol cálido, contraluz, luz de luna por la ventana).
+- **85** Correcciones del dueño a un borrador (que se vea caer la moneda, mano en el hombro calculada, revisar por segundos).
+- **86** Accesorios pegados al cuerpo: medir en los ejes del rig, no del mundo.
+- **87** Sombreros y bigotes (bigote de una sola pieza; el ala del sombrero no tapa la cara).
+- **88** Vestuario de NPC y la cabeza bronceada (de ahí sale `revisar_piel.py`).
+- **88b** Gancho sin huecos: mostrar cómo desaparece algo, no el lugar vacío.
+- **89** Letreros grandes y dentro de su marco; lo que se agrega a un edificio usa sus mismos materiales.
+- **90** Mundos enormes que no se acaban (miles de casas, niebla, nubes que no parecen plástico, humo de verdad).
+- **91** Encuadres en 9:16 (cabezas cortadas), fuego que parezca fuego, rayos X y volar con piernas vivas.
+- **91b** Animar sin la voz aprobada (voz temporal de Windows, sin gastar créditos) y render por turnos.
+- **92** Cámaras que se revisan solas para que nada tape en 67 tomas.
+- **93** Revisar el video renderizado, no solo la hoja de fotos.
+- **94** Rayos de luz, luces que queman la imagen y cámaras que se despejan solas.
+- **95** Que todo se mueva junto y que la acción se lea.
+- **96** Reutilizar el Pueblo en mapas nuevos, onomatopeyas fuera de la voz y que la idea se vea.
+- **97** Piso que parpadea, rayos que velan y derretir de verdad.
+- **98** Revisar cada fotograma antes de la vista previa: nadie atraviesa nada.
+- **99** Vestir a un NPC: medir su cara primero.
+- **100** Emparentar objetos recién creados y escaleras en un cerro.
+- **101** Rayos de luz y cosas que brillan encima de un personaje.
+- **102** Modelos de Studio que no son R15 normales (ciervo, R6, escenarios).
+- **102b** Agrandar algo del catálogo: revisarlo de cerca primero.
+- **103** Ola gigante de caricatura.
+- **104** Efectos de sonido que seguían sonando después de su acción.
+- **105** Encuadre fuera de la zona segura de Shorts.
+- **106** Cosas encima de la cabeza que chocan con el gorro.
+- **107** Luz de color pegada a la cara y cámaras que atraviesan techos.
+- **107b** La ola rota tapaba todo.
+- **108** Caras fuera de la zona segura y cámaras que atraviesan paredes al alejarlas.
+- **108b** Efectos de sonido de más y cortes que se oyen.
+- **109** Gancho de adelanto con voz nueva al principio, sin re-animar el episodio.
+- **110** Vista previa más rápida con muchas luces: `render_paralelo.py --rapida` (sombras a media resolución; con 2 Blender, 2,5 h bajan a ~1 h y no se nota la diferencia).
+- **111** Corazones de cariño que parezcan corazones.
+- **112** Parados en una tabla de surf o patineta: una pierna adelante y otra atrás, rodillas dobladas que se mueven.
+
+(Algunos números estaban repetidos; los segundos ahora llevan una **b**: 88b, 91b, 102b, 107b y 108b.)
+
+### 11. Carpetas personales nuevas
+Git no las sube ni las toca; solo viaja su `LEEME.md`:
+- `Musica/`: tu canción de fondo.
+- `Personajes/Animaciones/`: las animaciones que saques de Roblox Studio.
+- También quedan fuera las fotos sueltas (`.jpg`, `.png`) que pongas directo en `Personajes/`.
+
+### 12. Lista completa de archivos
+- **Nuevos (13):**
+  - `Herramientas/audio/`: `musica_fondo.py`, `acortar_palabra.py`, `quitar_onomatopeyas.py`
+  - `Herramientas/blender/`: `zona_segura.py`, `alturas.py`, `revisar_piel.py`, `rig_motor6d.py`, `animacion_roblox.py`, `texturas/marco_recuerdo.png`
+  - `Herramientas/limpiar_episodio.py`
+  - `Herramientas/roblox/sacar_animacion.luau`
+  - `Musica/LEEME.md`, `Personajes/Animaciones/LEEME.md`
+- **Cambiados (31):**
+  - Guías: `CLAUDE.md`, `docs/01_PIPELINE.md`, `docs/02_LECCIONES.md`, `docs/03_PERSONAJES.md`, `docs/05_CAMARAS_Y_TOMAS.md`, `docs/06_AUDIO_VOZ_SUBS.md`, `docs/IDEAS.md`, `docs/CAMBIOS.md`, `Caras/LEEME.md`, `Herramientas/LEEME.md`, `Herramientas/roblox/LEEME.md`
+  - Skills: `.claude/skills/nuevo-episodio/SKILL.md`, `.claude/skills/poner-rig/SKILL.md`, `.claude/skills/actualizar-kit/SKILL.md` (ahora te dice dónde leer esta guía)
+  - Plantilla: `Episodios/_PLANTILLA_EPISODIO/PLANO.md`
+  - Audio: `Herramientas/audio/armar_video.py`, `recortar_pausas.py`, `tomas_desde_voz.py`, `voz_elevenlabs.py`
+  - Blender: `Herramientas/blender/objetos_cartoon.py`, `vfx.py`, `tomas_simples.py`, `armar_rig_r15_auto.py`
+  - Otros: `Herramientas/armar_secuencia_caras.py`, `catalogo.py`, `config.py`, `rehacer_tramo.py`, `Herramientas/roblox/exportar_obj.ps1`, `studio_personajes.luau`
+  - Configuración: `.gitignore`, `mi_config.ejemplo.json`
 
 ## v0.5.0 — 2026-11-09 — Planear antes de animar (y nada tieso)
 **Cómo trabaja Claude un episodio ahora** (`CLAUDE.md`, skill `nuevo-episodio`, `docs/01_PIPELINE.md`). Es lo aprendido en EP004 y EP005 y en el entrenamiento con 172 videos:

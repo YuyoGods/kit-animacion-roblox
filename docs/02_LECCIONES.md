@@ -220,7 +220,7 @@ Agregar aquí cada error nuevo con su solución. Formato: **Problema → Causa �
 - **Causa de la cabeza bronceada** (medido en 20 NPC): `armar_rig_r15_auto.py` pasaba el `Kd` del `.mtl` a lineal, pero Roblox ya lo da en lineal. Pasarlo dos veces lo oscurece y lo vuelve naranja: por ejemplo, #eab892 (manos) queda en #d37c4a (cabeza). Ya está corregido para los rigs nuevos. Los rigs que ya existen (casi todos los NPC, Mamá, Raul, la crush, el mejor amigo y su amigo) siguen con la cabeza más oscura hasta que se les aplique `igualar_piel`.
 - **Arreglado en todos los rigs existentes (2026-11-09)**: con `Herramientas/blender/revisar_piel.py -- --arreglar`, que regresa al `Kd` original los colores convertidos dos veces. Respaldo previo en `Respaldos/piel_antes_2026-11-09/`. **Cada rig nuevo se examina con `revisar_piel.py`** (paso de la receta en `docs/03_PERSONAJES.md` y de la skill `poner-rig`). Sikelpa sale `REVISAR` a propósito: su cabeza es blanca y sus manos rojas por diseño, así que no es piel.
 
-### 88. Gancho sin huecos: mostrar como desaparece, no el lugar vacio (EP006, 2026-11-10)
+### 88b. Gancho sin huecos: mostrar como desaparece, no el lugar vacio (EP006, 2026-11-10)
 - En EP006 los segundos 3–6 ("¡Puf! Se lo traga el agua, y nunca vuelve") eran un puf y luego piso vacio: el usuario lo marco como el peor momento del gancho.
 - Receta usada (toma 2): ¡puf! = chorro dorado a sus pies y la fuente lo JALA (vuela de espaldas en arco, manoteando, con estela de brillos; llaves en cada cuadro porque las del rig son CONSTANT) -> "se lo traga el agua" = corte desde atras y arriba, cae con chapoteo grande y se hunde -> "y nunca vuelve" = desde arriba, solo flota la moneda brillante con ondas y las ultimas burbujas.
 - `arco()` esconde el objeto al llegar (y un cuadro antes de salir): si el objeto debe quedarse (flotar, quedar en el piso), poner las llaves a mano o usar `quedar`. Moneda acostada = rotacion X 0; con X 90 queda parada.
@@ -261,7 +261,7 @@ Agregar aquí cada error nuevo con su solución. Formato: **Problema → Causa �
 - **Mantas con texto**: si la manta grande tiene que verse completa, el texto chico de abajo queda pequeño; en la palabra clave se agrega un texto 3D grande que aparece de golpe ("¡3 DÍAS!") sin tapar el texto de la manta.
 - **Espacio para quien trabaja entre muebles**: el panadero quedaba DENTRO del horno porque entre el horno y la mesa había 0,29 de espacio. Al construir un puesto de trabajo, dejar ≥ 1,4 libres entre lo de atrás y lo de adelante (medir con las cajas de los objetos) y probar con el personaje parado ahí. Cámara a la altura del pecho: desde arriba, la mesa parece que la tiene encima.
 
-### 91. Animar de noche sin la voz aprobada, gancho de caída y render por turnos (EP008, 2026-11-10)
+### 91b. Animar de noche sin la voz aprobada, gancho de caída y render por turnos (EP008, 2026-11-10)
 - **Sin voz aprobada no se gastan créditos**: se hace una **voz temporal** con Windows (`System.Speech`, "Microsoft Sabina" es-MX, `Rate 3`, pausas de 120 ms; `scripts/voz_temporal.ps1`) → `recortar_pausas.py --audio voz_temporal_sabina.wav` → `tomas_desde_voz.py`. Sirve para animar con tiempos reales; cuando el usuario apruebe la voz del canal se rehacen esos dos pasos y se corre otra vez la animación (todo lee `tomas_voz.json`).
 - Whisper con voz robótica a veces oye otra palabra ("boing" → "boeing"): en la animación y en los efectos usar un respaldo por toma (`pal(n, w, k, rel)` en `animar_ep008.py`, `en(w, k, toma, rel)` en `armar_video.py`) con el MISMO punto relativo, para que el golpe y el sonido caigan juntos.
 - **Gancho "cae a la nube"**: globo que se infla de más y tiembla → ¡pop! (pedazos, destello de cómic chico para no tapar, líneas, brillitos) → el letrero 1 cambia a 0 rojo → la casa se queda colgada 8 cuadros → cae con gravedad de caricatura y gira → toma de dron que la sigue con un TRACK_TO a un vacío → corona de bocanadas + anillo de bocanadas (una dona plana se veía falsa) + neblina volumétrica que se levanta y se cierra.
@@ -363,7 +363,7 @@ Agregar aquí cada error nuevo con su solución. Formato: **Problema → Causa �
 - **Guardar un JSON largo de Studio**: lo que regresa `execute_luau` se lee del transcript con un script (marcadores `===NOMBRE===`), sin volver a escribirlo a mano.
 - El visor de Studio puede quedarse en negro después de los diálogos de exportar: no importa para exportar; las fotos de prueba se sacan en Blender.
 
-### 102. Agrandar algo del catálogo: revisarlo de cerca primero (EP010, lote 3, 2026-11-11)
+### 102b. Agrandar algo del catálogo: revisarlo de cerca primero (EP010, lote 3, 2026-11-11)
 - Lo que se veía bien chiquito puede fallar en grande. En `objetos_cartoon.concha` la cobertura de azúcar queda **debajo** del domo del pan (solo se ven las rayitas), y el `gato` del catálogo son 10 cajas: se ve crudo del tamaño de una casa. Antes de agrandar un objeto ×10, sacarle una foto de cerca; si falla, hacer la versión del episodio (o arreglar la del catálogo, avisando en `docs/CAMBIOS.md`).
 - **Contorno (solidify) en piezas delgadas** (bigotes, hilos, varitas): las engorda y parecen barras. Esas piezas van en un objeto aparte sin contorno.
 - **Vapor**: tubitos delgados (radio ≤ 0,035 del pan) y muy transparentes (alfa ~0,25). Con alfa 0,5 y más gruesos parecen dedos de plástico.
@@ -429,7 +429,7 @@ Agregar aquí cada error nuevo con su solución. Formato: **Problema → Causa �
   - **Objeto que no sigue a la mano** (la taza de EP011 nunca se vio: quedaba a ~1000 de distancia): `en_mano` leía `o.matrix_world` justo después de mover el objeto, pero si está **oculto en el viewport** (llaves de `ver`/`esconder`) Blender no lo evalúa y la matriz se queda vieja. Arreglo: armar la matriz a mano con `Matrix.LocRotScale(p, rot, escala)`. Los `en_mano` de `ep6`–`ep12` tienen el mismo patrón: corregirlos al usarlos. Revisarlo con `revisar_objetos` (decía «fuera de cuadro» en todas las tomas).
 - **Respaldo**: `Respaldos/EP011/EP011_antes_de_zona_segura_2026-11-11.blend`.
 
-### 107. La ola rota tapaba todo y las cámaras quedaban adentro de la ola (EP010, bloque 5, 2026-11-11)
+### 107b. La ola rota tapaba todo y las cámaras quedaban adentro de la ola (EP010, bloque 5, 2026-11-11)
 - **Síntoma**: tomas todas azules (la cámara estaba dentro de la ola), casas cubiertas de espuma blanca como nieve, y surfistas que no se veían delante de la ola. Además, la ola pasaba por la mansión 90 cuadros antes de llevársela.
 - **Causa**:
   - `romper_ola` estiraba la ola 1,6 veces hacia atrás: dejaba una capa de espuma de 500 de largo encima de la isla.
@@ -449,7 +449,7 @@ Agregar aquí cada error nuevo con su solución. Formato: **Problema → Causa �
   - El adelanto muestra lo más fuerte **sin revelar el giro** (la sombra en lo oscuro, no que es Beto). El rebobinado VHS (`rebobinar_ep011.py`, copia del de EP010 que también sirve con el borrador de 1 de cada 2 cuadros) va sobre los cuadros ya renderizados.
   - Respaldo de todo antes del cambio: `Respaldos/EP011/antes_opcion_A_2026-11-11/`.
 
-### 108. Efectos de sonido de más y cortes que se oyen (EP012, vista previa, 2026-11-11)
+### 108b. Efectos de sonido de más y cortes que se oyen (EP012, vista previa, 2026-11-11)
 - **Problema**: muchos efectos (29 en 2 min) y, al recortarlos en el cambio de toma, se oía el corte.
 - **Solución**: pocos efectos (uno por acción importante, ~20 en 2 min) y en `armar_video.py` cada efecto recortado se apaga con un desvanecido seno de 0,15–0,6 s que termina antes del corte; ambientes con 0,4–0,5 s de entrada y salida. Para un efecto que cae en medio de una frase, un 5o dato corto (0,3–0,9 s).
 
