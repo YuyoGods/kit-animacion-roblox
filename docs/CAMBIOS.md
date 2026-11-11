@@ -7,6 +7,7 @@
 Lo aprendido en EP006 a EP012. Ningún archivo compartido se renombró ni se movió.
 
 **Reglas nuevas para Claude** (`CLAUDE.md`, `docs/05`, `docs/06`, skills `nuevo-episodio` y `poner-rig`):
+- **Voz en off sin huecos**: `recortar_pausas.py` ahora deja hasta 0,10 s entre palabras, 0,12 s en comas, ~0,14 s entre líneas y 0,2 s después de "…". Antes eran 0,3–0,4 s entre líneas y EP005 se sintió lento. Viene así por defecto. Si ya recortaste una voz con la versión anterior, vuelve a correr `recortar_pausas.py` y `tomas_desde_voz.py`.
 - **Lista de lo que revisa el dueño en cada borrador** (`docs/05_CAMARAS_Y_TOMAS.md`): gancho sin huecos, nada quieto más de ~1 s, lo que se lanza se ve caer, nada tapa, caras (nunca la de fábrica), luz de noche, accesorios bien puestos, identidad de cada personaje, objetos chiquitos grandes y volumen. Claude la cumple antes de mandar el borrador.
 - **Zona segura de Shorts**: caras, burbujas y letreros centrados en x 6–86 %, y 12–70 % (abajo tapan el título y el botón de suscribirse). `Herramientas/blender/zona_segura.py` revisa y encuadra solo.
 - **Efectos de sonido que duran solo su acción** y se apagan suave antes del corte; pocos (uno por acción importante). Sin viento de día, sin aplausos ni multitud y sin ladridos (`docs/06`).
