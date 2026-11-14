@@ -3,6 +3,35 @@
 > Una entrada por cada actualización que se sube al repositorio (lo más nuevo arriba).
 > Si una actualización renombra o mueve archivos compartidos, avisarlo aquí.
 
+## v0.6.1 — 2026-11-14 — Subtítulos nuevos para los Shorts
+
+> **Para ti, que recibes esta actualización.** Trae **solo una cosa**: los subtítulos nuevos de los videos cortos (Shorts). Nada más cambia.
+>
+> **No se borra nada tuyo.** Tus personajes, caras, mapas, episodios, `MI_CANAL.md`, `MI_BITACORA.md` y `mi_config.json` quedan igual. Ningún archivo del kit cambió de nombre ni de lugar.
+
+### Cómo se ven
+Copia medida cuadro por cuadro de los subtítulos nuevos de Custerk (su Short del 12-nov-2026):
+- **Una palabra a la vez, EN MAYÚSCULAS**, letra **Montserrat Black**.
+- Relleno blanco con un **degradado suave** (no blanco puro), **contorno negro grueso** y **sombra 3D** hacia abajo.
+- **Entrada pop con rebote**: la palabra nace al 48 %, crece hasta 120 % y se asienta en 100 % (7 cuadros).
+- Centrada a **≈69 % de la altura**, dentro de la zona segura de Shorts. Las palabras largas se achican solas para caber.
+- Las palabras de `CLAVE` y **los números** salen en **dorado**. Sin comillas ni signos.
+
+### Qué hacer después de actualizar
+1. Nada obligatorio: los **episodios nuevos** ya salen con estos subtítulos (vienen por defecto en la plantilla `Herramientas/audio/armar_video.py`).
+2. **La letra:** el script busca Montserrat Black solo (en tu Roblox o CapCut instalados) y se la pasa a FFmpeg. Si no la encuentra, usa Arial Black. Si quieres asegurarla, copia `Montserrat-Black.ttf` a `Herramientas/audio/fuentes/` (carpeta personal: git no la sube).
+3. **Episodios que ya tienes:** su copia de `scripts/armar_video.py` sigue con los subtítulos de antes. Para cambiarlos, copia otra vez la plantilla (y pasa tus `EFECTOS`, `CLAVE` y `CALLAR`) y vuelve a armar el video; no hace falta re-renderizar.
+4. **Volver a los de antes:** en el `armar_video.py` del episodio, `ESTILO_SUBS = "clasico"` (1–2 palabras en minúsculas, 79 % de altura). También existe `"custerk_viejo"` (minúsculas, palabra clave en rojo).
+
+### Detalles
+- `SIN_SUBS = {"suscribete"}`: palabras que la voz dice pero que no salen en subtítulos (el botón SUSCRÍBETE ya lo dice; salían encimados).
+- Ojo con el encuadre: a 69 % el subtítulo cae sobre el pecho del personaje. Si el objeto clave de una toma queda a esa altura, súbelo en el cuadro o aleja un poco la cámara.
+- Guía completa: `docs/06_AUDIO_VOZ_SUBS.md` (sección Subtítulos).
+
+### Archivos que cambian
+- Nuevo: `Herramientas/audio/subtitulos_estilo.py`.
+- Cambian: `Herramientas/audio/armar_video.py` (usa el estilo nuevo), `docs/06_AUDIO_VOZ_SUBS.md`, `Herramientas/LEEME.md`, `CLAUDE.md` (fila de subtítulos), `.gitignore` (carpeta personal de letras) y este archivo.
+
 ## v0.6.0 — 2026-11-11 — Lo que el dueño revisa, Claude ya lo cumple solo
 
 > **Para ti, que recibes esta actualización.** Aquí está, una por una, cada cosa nueva que trae. Todo sale de hacer 7 episodios más (EP006 a EP012) y de las correcciones que el dueño del kit le fue pidiendo a Claude en ese tiempo. Claude ya las conoce y las aplica solo; esta guía es para que **tú** sepas qué va a hacer distinto y por qué.

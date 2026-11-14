@@ -1,5 +1,5 @@
 # Arma el video: la voz completa de corrido (las tomas ya siguen a la voz, ver tomas_desde_voz.py) + pocos efectos
-# debajo de la voz, cada uno justo cuando pasa algo en la escena + subtitulos automaticos de 1-2 palabras
+# debajo de la voz, cada uno justo cuando pasa algo en la escena + subtitulos automaticos (subtitulos_estilo.py)
 # + la musica de fondo del canal de principio a fin (mi_config.json -> musica_fondo; Herramientas/audio/musica_fondo.py) -> MP4.
 # PLANTILLA: copiar a EP###/scripts/armar_video.py y editar AMBIENTES, EFECTOS y CLAVE para el episodio.
 # Uso: py Episodios/EP###_Titulo/scripts/armar_video.py EP###_Titulo [preview|final] [--solo-audio]
@@ -46,6 +46,8 @@ EFECTOS = [
 CLAVE = set()        # palabras que van en amarillo en los subtitulos, ej. {"monstruo", "pum"}
 CALLAR = set()       # palabras que la voz dice pero que mejor hace el EFECTO (onomatopeyas que ElevenLabs lee
                      # en ingles, ej. {"dong"}): se silencian en la voz y no salen en subtitulos
+SIN_SUBS = {"suscribete"}   # se dicen pero NO van en subtitulos (el boton SUSCRIBETE ya lo dice; salian encimados, EP016 y EP018)
+ESTILO_SUBS = "custerk"   # "custerk" (1 palabra en MAYUSCULAS con pop, como Custerk), "custerk_viejo" o "clasico"
 # ===================================================================
 
 SOLO_AUDIO = "--solo-audio" in sys.argv[1:]      # solo la mezcla (voz + efectos + musica) para escucharla, sin video
@@ -185,52 +187,19 @@ if SOLO_AUDIO:
     print("MEZCLA LISTA (sin video):", escuchar)
     sys.exit(0)
 
-# ================= SUBTITULOS automaticos (1-2 palabras, 1 linea) =================
-trozos, actual = [], []
-for p in VOZ["palabras"]:
-    if p["w"] in CALLAR or p.get("sfx"):                     # las marcas de efecto (quitar_onomatopeyas.py) no llevan subtitulo
-        continue
-    actual.append(p)
-    corta = p["texto"][-1] in ",.:;!?\"»…" or p["texto"].endswith("...")
-    if corta or len(actual) == 2 or (p["t1"] - actual[0]["t0"]) > 0.65:
-        trozos.append(actual); actual = []
-if actual:
-    trozos.append(actual)
-def limpio(w):
-    """palabra sin comillas ni signos (. , ! ¡ ? ¿ : ; …): los subtitulos van limpios"""
-    return re.sub(r"[^\w]", "", w)
-
-events = [[tz[0]["t0"] - 0.03, tz[-1]["t1"], " ".join(x for x in (limpio(p["texto"]) for p in tz) if x)] for tz in trozos]
-for k in range(len(events)):
-    nxt = events[k + 1][0] if k + 1 < len(events) else DUR
-    events[k][1] = min(nxt, events[k][1] + 0.25)
-    if nxt - events[k][1] < 0.3:
-        events[k][1] = nxt
-
-
-def ts(t):
-    t = max(0.0, t); h = int(t // 3600); m = int(t % 3600 // 60); s = t % 60
-    return "%d:%02d:%05.2f" % (h, m, s)
-
-
-def styled(c):
-    return " ".join("{\\c&H2AD8FF&}" + w + "{\\c&HFFFFFF&}" if norm(w) in CLAVE else w for w in c.split())
-
-
-ass = ["[Script Info]", "ScriptType: v4.00+", "PlayResX: 1080", "PlayResY: 1920", "WrapStyle: 2", "",
-       "[V4+ Styles]",
-       "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding",
-       "Style: Sub,Arial Black,96,&H00FFFFFF,&H00FFFFFF,&H00000000,&H64000000,-1,0,0,0,100,100,0,0,1,8,3,2,50,50,420,1",
-       "", "[Events]", "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text"]
-for t0, t1, c in events:
-    ass.append("Dialogue: 0,%s,%s,Sub,,0,0,0,,{\\fscx118\\fscy118\\t(0,90,\\fscx100\\fscy100)}%s" % (ts(t0), ts(t1), styled(c)))
-open(os.path.join(AUD, "subtitulos.ass"), "w", encoding="utf-8").write("\n".join(ass) + "\n")
+# ================= SUBTITULOS (Herramientas/audio/subtitulos_estilo.py) =================
+# "custerk" (desde 2026-11-12, copia de sus subtitulos del 10-12 nov): UNA palabra EN MAYUSCULAS, Montserrat Black,
+# relleno con degradado suave, contorno negro y sombra 3D, entrada pop con rebote (48 -> 120 -> 100 %), a 69 % de la
+# altura; CLAVE y numeros en dorado. "custerk_viejo" (hasta el 9-nov) y "clasico" (el nuestro de antes) siguen disponibles.
+import subtitulos_estilo  # noqa: E402
+texto_ass, events = subtitulos_estilo.armar(VOZ["palabras"], DUR, clave=CLAVE, callar=CALLAR | SIN_SUBS, estilo=ESTILO_SUBS)
+open(os.path.join(AUD, "subtitulos.ass"), "w", encoding="utf-8").write(texto_ass)
 json.dump({"subtitulos": events}, open(os.path.join(AUD, "tiempos_finales.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
 
 # ================= VIDEO =================
 os.chdir(AUD)          # ruta corta para el filtro de subtitulos
 cmd = ["ffmpeg", "-v", "error", "-y", "-framerate", str(FPS), "-i", os.path.join(FRAMES, "c_%04d.png"),
-       "-i", final_wav, "-vf", "scale=1080:1920:flags=lanczos,subtitles=subtitulos.ass",
+       "-i", final_wav, "-vf", "scale=1080:1920:flags=lanczos," + subtitulos_estilo.filtro("subtitulos.ass", AUD, ESTILO_SUBS),
        "-c:v", "libx264", "-preset", "slow", "-crf", "17", "-pix_fmt", "yuv420p", "-r", str(FPS),
        "-c:a", "aac", "-b:a", "256k", "-shortest", "-movflags", "+faststart", OUT_MP4]
 subprocess.run(cmd, check=True)

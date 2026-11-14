@@ -99,7 +99,7 @@ Nombres: episodios `EP001_Titulo_Corto`, cámaras `CR_Cam_S#_Nombre`, marcadores
 | Final | 100 %, 32–64 muestras (≈4–6 s/fotograma → ~1 h por 30 s) |
 | Color | View transform **Standard** (colores planos tipo Roblox), colores sRGB → lineal |
 | Audio | voz −1 dB, efectos suaves, música de fondo de principio a fin −16 dB bajo la voz (`mi_config.json` → `musica_fondo`), loudnorm −14 LUFS, AAC 256k |
-| Subtítulos | 1–3 palabras, 1 línea, abajo al centro (≈79 % de altura), Arial Black 92, contorno negro, palabras clave en amarillo, sin comillas ni signos |
+| Subtítulos | estilo nuevo de Custerk (su Short del 12-nov; `Herramientas/audio/subtitulos_estilo.py`): 1 palabra a la vez EN MAYÚSCULAS, Montserrat Black, relleno con degradado suave, contorno negro grueso y sombra 3D, entrada pop con rebote (48 → 120 → 100 %), al centro a ≈69 % de altura (zona segura), palabras clave y números en dorado, sin comillas ni signos (`ESTILO_SUBS = "clasico"` = el de antes) |
 | Fotogramas | `EP###/renders/<preview|final>/fotogramas/c_0001.png …` (los lee `armar_video.py`) |
 
 ## 5. Herramientas
